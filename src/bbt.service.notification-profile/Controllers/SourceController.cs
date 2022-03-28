@@ -94,11 +94,9 @@ public class SourceController : ControllerBase
 
             if (source == null)
             return new ObjectResult(id) { StatusCode = 460 };
-
             
-            List<SourceServicesUrl> servicesUrls = new List<SourceServicesUrl>();
-            SourceServicesUrl sourceServicesUrl= new SourceServicesUrl();
             var sourceService = db.SourceServices.Where(s=> id == s.SourceId).Select(x => new SourceServicesUrl{
+                Id=x.Id,
                 ServiceUrl=x.ServiceUrl
             }).ToList();
             
