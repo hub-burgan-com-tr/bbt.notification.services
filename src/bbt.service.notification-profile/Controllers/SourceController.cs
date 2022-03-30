@@ -93,9 +93,9 @@ public class SourceController : ControllerBase
                 s.Id == id).FirstOrDefault();
 
             if (source == null)
-            return new ObjectResult(id) { StatusCode = 460 };
+                return new ObjectResult(id) { StatusCode = 460 };
 
-            
+
             List<SourceServicesUrl> servicesUrls = new List<SourceServicesUrl>();
             SourceServicesUrl sourceServicesUrl= new SourceServicesUrl();
             var sourceService = db.SourceServices.Where(s=> id == s.SourceId).Select(x => new SourceServicesUrl{
@@ -116,14 +116,14 @@ public class SourceController : ControllerBase
             returnValue.ClientIdJsonPath=source.ClientIdJsonPath;
             returnValue.KafkaUrl=source.KafkaUrl;
             returnValue.ServiceUrlList=sourceService;
-            
+
         }
 
         return Ok(returnValue);
     }
-    
 
-    
+
+
 
     [SwaggerOperation(
              Summary = "Adds new data sources",
@@ -226,14 +226,13 @@ public class SourceController : ControllerBase
          Summary = "Returns all consumers with filtering (if available)",
          Tags = new[] { "Source" }
      )]
-    [HttpGet("/sources/{id}/consumers-by-client/{client}")]
+    [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
     public IActionResult GetSourceConsumers(
-    [FromRoute] int id,
-    [FromRoute] long client,
-    [DefaultValue("{   \"data\": {     \"amount\": 600,     \"iban\":\"TR1234567\",     \"name\": {       \"first\": \"ugur\",       \"last\": \"karatas\"     }   } }")]
-    [FromQuery] string jsonData
+     int id,
+     long client,
+     string jsonData
 )
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
@@ -246,11 +245,12 @@ public class SourceController : ControllerBase
             var consumers = db.Consumers.Where(s => (s.Client == client || s.Client == 0) && s.SourceId == id).ToList();
 
             if (consumers.Count == 0)
-               return new ObjectResult(consumers) { StatusCode = 470 };
+                return new ObjectResult(consumers) { StatusCode = 470 };
 
             // Eger filtre yoksa bosu bosuna deserialize etme
             if (consumers.Any(c => c.Filter != null))
             {
+                jsonData=jsonData.Replace(@"\","");
                 message = JsonConvert.DeserializeObject(jsonData);
             }
 
