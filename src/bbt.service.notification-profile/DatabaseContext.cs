@@ -25,7 +25,6 @@ public class DatabaseContext : DbContext
             
         options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
         options.EnableSensitiveDataLogging();
-        Console.WriteLine(configuration.GetConnectionString("DefaultConnection"));
     }
     
 
