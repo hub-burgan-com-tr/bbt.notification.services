@@ -230,7 +230,7 @@ public class SourceController : ControllerBase
     [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
-    public IActionResult GetSourceConsumers(int id, long client, string jsonData)
+    public IActionResult GetSourceConsumers( [FromBody] GetSourceConsumersRequestBody requestModel )
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
 
@@ -239,23 +239,23 @@ public class SourceController : ControllerBase
         using (var db = new DatabaseContext())
         {
             // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
-            var consumers = db.Consumers.Where(s => (s.Client == client || s.Client == 0) && s.SourceId == id).ToList();
+            var consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
 
             if (consumers.Count == 0)
                 return new ObjectResult(consumers) { StatusCode = 470 };
 
             // Eger filtre yoksa bosu bosuna deserialize etme
-            if (consumers.Any(c => c.Filter != null) && jsonData is not null)
+            if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
             {
-                jsonData = jsonData.Replace(@"\", "");
-                message = JsonConvert.DeserializeObject(jsonData);
+                requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
+                message = JsonConvert.DeserializeObject(requestModel.jsonData);
             }
 
             consumers.ForEach(c =>
             {
                 bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
 
-                if (c.Filter != null&& jsonData is not null)
+                if (c.Filter != null&& requestModel.jsonData is not null)
                 {
                     canSend = Extensions.Evaluate(c.Filter, message);
                 }
