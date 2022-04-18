@@ -287,7 +287,7 @@ public class SourceController : ControllerBase
         catch (Exception e)
         {
             Console.WriteLine("CATCH " +e.Message);
-            return null;
+            return new ObjectResult(null) { StatusCode = 500 };
         }
 
 
