@@ -246,7 +246,7 @@ public class SourceController : ControllerBase
                 var consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
 
                 if (consumers.Count == 0)
-                    return new ObjectResult(consumers) { StatusCode = 470 };
+                    return null;
 
                 // Eger filtre yoksa bosu bosuna deserialize etme
                 if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
@@ -287,7 +287,7 @@ public class SourceController : ControllerBase
         catch (Exception e)
         {
             Console.WriteLine("CATCH " +e.Message);
-            return new ObjectResult(null) { StatusCode = 470 };
+            return null;
         }
 
 
