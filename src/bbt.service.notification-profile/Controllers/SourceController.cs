@@ -231,7 +231,7 @@ public class SourceController : ControllerBase
     [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
-    public IActionResult GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
+    public async Task<ActionResult<GetSourceConsumersResponse>>GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
 
@@ -280,6 +280,7 @@ public class SourceController : ControllerBase
                             Email = c.Email
                         });
                 });
+                
             }
 
             return Ok(returnValue);
