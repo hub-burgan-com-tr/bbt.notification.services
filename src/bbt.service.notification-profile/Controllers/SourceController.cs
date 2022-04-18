@@ -97,26 +97,27 @@ public class SourceController : ControllerBase
 
 
             List<SourceServicesUrl> servicesUrls = new List<SourceServicesUrl>();
-            SourceServicesUrl sourceServicesUrl= new SourceServicesUrl();
-            var sourceService = db.SourceServices.Where(s=> id == s.SourceId).Select(x => new SourceServicesUrl{
-                Id=x.Id,
-                ServiceUrl=x.ServiceUrl
+            SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
+            var sourceService = db.SourceServices.Where(s => id == s.SourceId).Select(x => new SourceServicesUrl
+            {
+                Id = x.Id,
+                ServiceUrl = x.ServiceUrl
             }).ToList();
-            
-            returnValue.Id=source.Id;
-            returnValue.Topic=source.Topic;
-            returnValue.SmsServiceReference=source.SmsServiceReference;
-            returnValue.EmailServiceReference=source.EmailServiceReference;
-            returnValue.PushServiceReference=source.PushServiceReference;
-            returnValue.Title_TR=source.Title_TR;
-            returnValue.Title_EN=source.Title_EN;
-            returnValue.ParentId=source.ParentId;
-            returnValue.DisplayType=source.DisplayType;
-            returnValue.ApiKey=source.ApiKey;
-            returnValue.Secret=source.Secret;
-            returnValue.ClientIdJsonPath=source.ClientIdJsonPath;
-            returnValue.KafkaUrl=source.KafkaUrl;
-            returnValue.ServiceUrlList=sourceService;
+
+            returnValue.Id = source.Id;
+            returnValue.Topic = source.Topic;
+            returnValue.SmsServiceReference = source.SmsServiceReference;
+            returnValue.EmailServiceReference = source.EmailServiceReference;
+            returnValue.PushServiceReference = source.PushServiceReference;
+            returnValue.Title_TR = source.Title_TR;
+            returnValue.Title_EN = source.Title_EN;
+            returnValue.ParentId = source.ParentId;
+            returnValue.DisplayType = source.DisplayType;
+            returnValue.ApiKey = source.ApiKey;
+            returnValue.Secret = source.Secret;
+            returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
+            returnValue.KafkaUrl = source.KafkaUrl;
+            returnValue.ServiceUrlList = sourceService;
 
         }
 
@@ -230,55 +231,66 @@ public class SourceController : ControllerBase
     [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
-    public IActionResult GetSourceConsumers( [FromBody] GetSourceConsumersRequestBody requestModel )
+    public IActionResult GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
 
-        dynamic message = null;
-
-        using (var db = new DatabaseContext())
+        try
         {
-            // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
-            var consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
 
-            if (consumers.Count == 0)
-                return new ObjectResult(consumers) { StatusCode = 470 };
+            dynamic message = null;
 
-            // Eger filtre yoksa bosu bosuna deserialize etme
-            if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
+            using (var db = new DatabaseContext())
             {
-                requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
-                message = JsonConvert.DeserializeObject(requestModel.jsonData);
-            }
+                // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
+                var consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
 
-            consumers.ForEach(c =>
-            {
-                bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
+                if (consumers.Count == 0)
+                    return new ObjectResult(consumers) { StatusCode = 470 };
 
-                if (c.Filter != null&& requestModel.jsonData is not null)
+                // Eger filtre yoksa bosu bosuna deserialize etme
+                if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
                 {
-                    canSend = Extensions.Evaluate(c.Filter, message);
+                    requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
+                    message = JsonConvert.DeserializeObject(requestModel.jsonData);
                 }
 
-                if (canSend)
+                consumers.ForEach(c =>
+                {
+                    bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
 
-                    returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
+                    if (c.Filter != null && requestModel.jsonData is not null)
                     {
-                        Id = c.Id,
-                        Client = c.Client,
-                        User = c.User,
-                        IsPushEnabled = c.IsPushEnabled,
-                        DeviceKey = c.DeviceKey,
-                        Filter = c.Filter,
-                        IsSmsEnabled = c.IsSmsEnabled,
-                        Phone = c.Phone,
-                        IsEmailEnabled = c.IsEmailEnabled,
-                        Email = c.Email
-                    });
-            });
+                        canSend = Extensions.Evaluate(c.Filter, message);
+                    }
+
+                    if (canSend)
+
+                        returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
+                        {
+                            Id = c.Id,
+                            Client = c.Client,
+                            User = c.User,
+                            IsPushEnabled = c.IsPushEnabled,
+                            DeviceKey = c.DeviceKey,
+                            Filter = c.Filter,
+                            IsSmsEnabled = c.IsSmsEnabled,
+                            Phone = c.Phone,
+                            IsEmailEnabled = c.IsEmailEnabled,
+                            Email = c.Email
+                        });
+                });
+            }
+
+            return Ok(returnValue);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("CATCH " +e.Message);
+            return new ObjectResult(null) { StatusCode = 470 };
         }
 
-        return Ok(returnValue);
+
     }
 
 
