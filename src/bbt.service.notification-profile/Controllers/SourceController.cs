@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
@@ -87,10 +88,11 @@ public class SourceController : ControllerBase
     {
         GetSourceTopicByIdResponse returnValue = new GetSourceTopicByIdResponse();
 
+var source = null;
         using (var db = new DatabaseContext())
         {
-            var source = db.Sources.Where(s =>
-                s.Id == id).FirstOrDefault();
+            source = db.Sources.Where(s => s.Id == id).FirstOrDefault();
+        }
 
             if (source == null)
                 return new ObjectResult(id) { StatusCode = 460 };
@@ -118,8 +120,6 @@ public class SourceController : ControllerBase
             returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
             returnValue.KafkaUrl = source.KafkaUrl;
             returnValue.ServiceUrlList = sourceService;
-
-        }
 
         return Ok(returnValue);
     }
@@ -239,17 +239,18 @@ public class SourceController : ControllerBase
         {
 
             dynamic message = null;
-
+var consumers = null;
             using (var db = new DatabaseContext())
             {
                 // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
-                var consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
+                 consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList(); 
+            }
 
-                if (consumers.Count == 0)
+             if (consumers == null || consumers.Count <1)
                     return new ObjectResult(consumers) { StatusCode = 470 };
+      // Eger filtre yoksa bosu bosuna deserialize etme             
 
-                // Eger filtre yoksa bosu bosuna deserialize etme
-                if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
+             if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
                 {
                     requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
                     message = JsonConvert.DeserializeObject(requestModel.jsonData);
@@ -280,8 +281,7 @@ public class SourceController : ControllerBase
                             Email = c.Email
                         });
                 });
-                
-            }
+
 
             return Ok(returnValue);
         }
