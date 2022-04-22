@@ -121,7 +121,7 @@ public class DatabaseContext : DbContext
           {
               Id = 1,
               SourceId = 1,
-              ServiceUrl = "http://notification-enrichment.test-notification-enrichment.svc:5000/GetTelephoneNumber",
+              ServiceUrl = "X",
               
           });
 
