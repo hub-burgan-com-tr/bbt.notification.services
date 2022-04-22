@@ -88,39 +88,39 @@ public class SourceController : ControllerBase
     {
         GetSourceTopicByIdResponse returnValue = new GetSourceTopicByIdResponse();
 
-var source = null;
+        Source source = null;
+        List<SourceServicesUrl> servicesUrls = null;
         using (var db = new DatabaseContext())
         {
             source = db.Sources.Where(s => s.Id == id).FirstOrDefault();
-        }
-
-            if (source == null)
-                return new ObjectResult(id) { StatusCode = 460 };
-
-
-            List<SourceServicesUrl> servicesUrls = new List<SourceServicesUrl>();
-            SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
-            var sourceService = db.SourceServices.Where(s => id == s.SourceId).Select(x => new SourceServicesUrl
+            servicesUrls = db.SourceServices.Where(s => id == s.SourceId).Select(x => new SourceServicesUrl
             {
                 Id = x.Id,
                 ServiceUrl = x.ServiceUrl
             }).ToList();
+        }
 
-            returnValue.Id = source.Id;
-            returnValue.Topic = source.Topic;
-            returnValue.SmsServiceReference = source.SmsServiceReference;
-            returnValue.EmailServiceReference = source.EmailServiceReference;
-            returnValue.PushServiceReference = source.PushServiceReference;
-            returnValue.Title_TR = source.Title_TR;
-            returnValue.Title_EN = source.Title_EN;
-            returnValue.ParentId = source.ParentId;
-            returnValue.DisplayType = source.DisplayType;
-            returnValue.ApiKey = source.ApiKey;
-            returnValue.Secret = source.Secret;
-            returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
-            returnValue.KafkaUrl = source.KafkaUrl;
-            returnValue.ServiceUrlList = sourceService;
+        if (source == null)
+            return new ObjectResult(id) { StatusCode = 460 };
 
+
+        
+        SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
+
+        returnValue.Id = source.Id;
+        returnValue.Topic = source.Topic;
+        returnValue.SmsServiceReference = source.SmsServiceReference;
+        returnValue.EmailServiceReference = source.EmailServiceReference;
+        returnValue.PushServiceReference = source.PushServiceReference;
+        returnValue.Title_TR = source.Title_TR;
+        returnValue.Title_EN = source.Title_EN;
+        returnValue.ParentId = source.ParentId;
+        returnValue.DisplayType = source.DisplayType;
+        returnValue.ApiKey = source.ApiKey;
+        returnValue.Secret = source.Secret;
+        returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
+        returnValue.KafkaUrl = source.KafkaUrl;
+        returnValue.ServiceUrlList = servicesUrls;
         return Ok(returnValue);
     }
 
@@ -231,7 +231,7 @@ var source = null;
     [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
-    public async Task<ActionResult<GetSourceConsumersResponse>>GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
+    public async Task<ActionResult<GetSourceConsumersResponse>> GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
 
@@ -239,55 +239,55 @@ var source = null;
         {
 
             dynamic message = null;
-var consumers = null;
+            List<Consumer> consumers = null;
             using (var db = new DatabaseContext())
             {
                 // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
-                 consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList(); 
+                consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
             }
 
-             if (consumers == null || consumers.Count <1)
-                    return new ObjectResult(consumers) { StatusCode = 470 };
-      // Eger filtre yoksa bosu bosuna deserialize etme             
+            if (consumers == null || consumers.Count() < 1)
+                return new ObjectResult(consumers) { StatusCode = 470 };
+            // Eger filtre yoksa bosu bosuna deserialize etme             
 
-             if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
-                {
-                    requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
-                    message = JsonConvert.DeserializeObject(requestModel.jsonData);
-                }
+            if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
+            {
+                requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
+                message = JsonConvert.DeserializeObject(requestModel.jsonData);
+            }
 
-                consumers.ForEach(c =>
-                {
-                    bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
+            consumers.ForEach(c =>
+            {
+                bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
 
                     if (c.Filter != null && requestModel.jsonData is not null)
+                {
+                    canSend = Extensions.Evaluate(c.Filter, message);
+                }
+
+                if (canSend)
+
+                    returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
                     {
-                        canSend = Extensions.Evaluate(c.Filter, message);
-                    }
-
-                    if (canSend)
-
-                        returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
-                        {
-                            Id = c.Id,
-                            Client = c.Client,
-                            User = c.User,
-                            IsPushEnabled = c.IsPushEnabled,
-                            DeviceKey = c.DeviceKey,
-                            Filter = c.Filter,
-                            IsSmsEnabled = c.IsSmsEnabled,
-                            Phone = c.Phone,
-                            IsEmailEnabled = c.IsEmailEnabled,
-                            Email = c.Email
-                        });
-                });
+                        Id = c.Id,
+                        Client = c.Client,
+                        User = c.User,
+                        IsPushEnabled = c.IsPushEnabled,
+                        DeviceKey = c.DeviceKey,
+                        Filter = c.Filter,
+                        IsSmsEnabled = c.IsSmsEnabled,
+                        Phone = c.Phone,
+                        IsEmailEnabled = c.IsEmailEnabled,
+                        Email = c.Email
+                    });
+            });
 
 
             return Ok(returnValue);
         }
         catch (Exception e)
         {
-            Console.WriteLine("CATCH " +e.Message);
+            Console.WriteLine("CATCH " + e.Message);
             return new ObjectResult(null) { StatusCode = 500 };
         }
 
