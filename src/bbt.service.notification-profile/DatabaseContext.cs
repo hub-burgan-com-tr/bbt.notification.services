@@ -76,7 +76,7 @@ public class DatabaseContext : DbContext
               Title_EN = "CashBackEN",
               DisplayType = SourceDisplayType.NotDisplay,
               Topic = "CAMPAIGN_CASHBACK_ACCOUNTING_INFO",
-              KafkaUrl = "cluster-kafka-tls-bootstrap-test-kafka4cdc.apps.nonprod.ebt.bank:443",
+              KafkaUrl = "x",
               ApiKey = "",
               Secret = "",
               PushServiceReference = "notify_push_incoming_eft",
