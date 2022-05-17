@@ -274,7 +274,7 @@ public class SourceController : ControllerBase
                     if (c.Client == 0)
                     {
                         BGetCustomerInfo bGetCustomerInfo = new BGetCustomerInfo(null);
-                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { customerId = 20186224 });
+                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { customerId = requestModel.client });
 
                         if (customerInformationModel != null)
                         {
