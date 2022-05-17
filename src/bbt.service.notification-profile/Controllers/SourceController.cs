@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Annotations;
+using Notification.Profile.Business;
+using bbt.framework.dengage.Business;
+
+
 
 //namespace Notification.Profile.Controllers;
 
@@ -104,7 +108,7 @@ public class SourceController : ControllerBase
             return new ObjectResult(id) { StatusCode = 460 };
 
 
-        
+
         SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
 
         returnValue.Id = source.Id;
@@ -225,9 +229,9 @@ public class SourceController : ControllerBase
 
 
     [SwaggerOperation(
-         Summary = "Returns all consumers with filtering (if available)",
-         Tags = new[] { "Source" }
-     )]
+          Summary = "Returns all consumers with filtering (if available)",
+          Tags = new[] { "Source" }
+      )]
     [HttpPost("/sources/consumers-by-client")]
     [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
     [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
@@ -256,17 +260,30 @@ public class SourceController : ControllerBase
                 message = JsonConvert.DeserializeObject(requestModel.jsonData);
             }
 
-            consumers.ForEach(c =>
+            consumers.ForEach(async c =>
             {
                 bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
 
-                    if (c.Filter != null && requestModel.jsonData is not null)
+                if (c.Filter != null && requestModel.jsonData is not null)
                 {
                     canSend = Extensions.Evaluate(c.Filter, message);
                 }
 
                 if (canSend)
+                {
+                    if (c.Client == 0)
+                    {
+                        BGetCustomerInfo bGetCustomerInfo = new BGetCustomerInfo(null);
+                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { customerId = 20186224 });
 
+                        if (customerInformationModel != null)
+                        {
+                            c.Phone=new Phone();
+                            c.Phone.Number = customerInformationModel.telephoneNumber;
+                            c.Phone.CountryCode = customerInformationModel.countryCode;
+                            c.Phone.Prefix = customerInformationModel.cityCode;
+                        }
+                    }
                     returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
                     {
                         Id = c.Id,
@@ -280,9 +297,8 @@ public class SourceController : ControllerBase
                         IsEmailEnabled = c.IsEmailEnabled,
                         Email = c.Email
                     });
+                }
             });
-
-
             return Ok(returnValue);
         }
         catch (Exception e)
@@ -291,8 +307,8 @@ public class SourceController : ControllerBase
             return new ObjectResult(null) { StatusCode = 500 };
         }
 
-
     }
+
 
 
 }
