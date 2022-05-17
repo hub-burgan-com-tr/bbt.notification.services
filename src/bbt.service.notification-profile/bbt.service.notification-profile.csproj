@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Notification.Profile</RootNamespace>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>e2036448-287d-4fab-b7b4-c6eff934c33e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -31,7 +32,10 @@
 
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.1.0-1.final" />
+	  <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="5.2.7" />
 
+	  <PackageReference Include="Polly" Version="7.2.3" />
+	  <PackageReference Include="RestEase" Version="1.5.5" />
   </ItemGroup>
 
 </Project>

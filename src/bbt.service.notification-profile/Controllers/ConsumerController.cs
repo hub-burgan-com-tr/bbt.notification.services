@@ -1,13 +1,16 @@
 using System.Collections;
 using System.ComponentModel;
 using System.Linq.Expressions;
+using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text.Json;
+using bbt.framework.dengage.Business;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Notification.Profile.Business;
 using Swashbuckle.AspNetCore.Annotations;
 
 [ApiController]
@@ -65,65 +68,83 @@ public class ConsumerController : ControllerBase
     }
 
     [SwaggerOperation(
-                Summary = "Add or updates consumer configuration of user",
-                Tags = new[] { "Consumer" }
-            )]
-    [HttpPost("/consumers/clients/{client}/users/{user}")]
-    [SwaggerResponse(200, "Success, consumer is updates successfully", typeof(PostConsumerResponse))]
-    [SwaggerResponse(201, "Success, consumer is created successfully", typeof(PostConsumerResponse))]
-
-    public IActionResult Post(
-          [FromRoute] long client,
-          [FromRoute] long user,
-          [FromBody] PostConsumerRequest data
-      )
+          Summary = "Returns all consumers with filtering (if available)",
+          Tags = new[] { "Source" }
+      )]
+    [HttpPost("/sources/consumers-by-client")]
+    [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(GetSourceConsumersResponse))]
+    [SwaggerResponse(470, "No results were found for the given parameters", typeof(Guid))]
+    public async Task<ActionResult<GetSourceConsumersResponse>> GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
     {
-        // ilgili configurasyon var mi, kontrol edelim.
-        using (var db = new DatabaseContext())
+        GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
+
+        try
         {
-            var consumer = db.Consumers.Where(s =>
-                s.Client == client &&
-                s.User == user &&
-                (data.Source.HasValue || s.SourceId == data.Source.Value) &&
-                (data.Filter == null || s.Filter == data.Filter)
-                )
-            .FirstOrDefault();
 
-            if (consumer != null)
+            dynamic message = null;
+            List<Consumer> consumers = null;
+            using (var db = new DatabaseContext())
             {
-                consumer.IsPushEnabled = data.IsPushEnabled;
-                consumer.DeviceKey = data.DeviceKey;
-                consumer.IsSmsEnabled = data.IsSmsEnabled;
-                consumer.Phone = data.Phone;
-                consumer.IsEmailEnabled = data.IsEmailEnabled;
-                consumer.Email = data.Email;
-                db.SaveChanges();
-
-                return Ok(new PostConsumerResponse { Consumer = consumer });
+                // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
+                consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
             }
-            else
+
+            if (consumers == null || consumers.Count() < 1)
+                return new ObjectResult(consumers) { StatusCode = 470 };
+            // Eger filtre yoksa bosu bosuna deserialize etme             
+
+            if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
             {
-                var newConsumer = new Consumer
+                requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
+                message = JsonConvert.DeserializeObject(requestModel.jsonData);
+            }
+
+            consumers.ForEach(async c =>
+            {
+                bool canSend = true; // eger filtre yoksa gonderim sekteye ugramasin.
+
+                if (c.Filter != null && requestModel.jsonData is not null)
                 {
-                    Id = Guid.NewGuid(),
-                    Client = client,
-                    User = user,
-                    SourceId = data.Source.Value,
-                    Filter = data.Filter,
-                    IsPushEnabled = data.IsPushEnabled,
-                    DeviceKey = data.DeviceKey,
-                    IsSmsEnabled = data.IsSmsEnabled,
-                    Phone = data.Phone,
-                    IsEmailEnabled = data.IsEmailEnabled,
-                    Email = data.Email
-                };
+                    canSend = Extensions.Evaluate(c.Filter, message);
+                }
 
-                db.Add(newConsumer);
-                db.SaveChanges();
+                if (canSend)
+                {
+                    if (c.Client == 0)
+                    {
+                        BGetCustomerInfo bGetCustomerInfo = new BGetCustomerInfo(null);
+                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { customerId = 20186224 });
 
-                return Created("", new PostConsumerResponse { Consumer = newConsumer });
-            }
+                        if (customerInformationModel != null)
+                        {
+                            c.Phone.Number = customerInformationModel.telephoneNumber;
+                            c.Phone.CountryCode = customerInformationModel.countryCode;
+                            c.Phone.Prefix = customerInformationModel.cityCode;
+                        }
+                    }
+                    returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer
+                    {
+                        Id = c.Id,
+                        Client = c.Client,
+                        User = c.User,
+                        IsPushEnabled = c.IsPushEnabled,
+                        DeviceKey = c.DeviceKey,
+                        Filter = c.Filter,
+                        IsSmsEnabled = c.IsSmsEnabled,
+                        Phone = c.Phone,
+                        IsEmailEnabled = c.IsEmailEnabled,
+                        Email = c.Email
+                    });
+                }
+            });
+            return Ok(returnValue);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("CATCH " + e.Message);
+            return new ObjectResult(null) { StatusCode = 500 };
         }
 
     }
+
 }
