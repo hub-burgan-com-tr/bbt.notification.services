@@ -253,7 +253,10 @@ public class SourceController : ControllerBase
             if (consumers == null || consumers.Count() < 1)
                 return new ObjectResult(consumers) { StatusCode = 470 };
             // Eger filtre yoksa bosu bosuna deserialize etme             
-
+            if (consumers.Count>1 &&consumers.FirstOrDefault(c => c.Client == 0)!=null)
+            {
+                consumers.Remove(consumers.FirstOrDefault(c => c.Client == 0));
+            }
             if (consumers.Any(c => c.Filter != null) && requestModel.jsonData is not null)
             {
                 requestModel.jsonData = requestModel.jsonData.Replace(@"\", "");
