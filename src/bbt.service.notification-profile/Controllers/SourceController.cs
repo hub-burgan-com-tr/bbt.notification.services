@@ -277,14 +277,14 @@ public class SourceController : ControllerBase
                     if (c.Client == 0)
                     {
                         BGetCustomerInfo bGetCustomerInfo = new BGetCustomerInfo(null);
-                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { customerId = requestModel.client });
+                        CustomerInformationModel customerInformationModel = await bGetCustomerInfo.GetTelephoneNumber(new GetTelephoneNumberRequestModel() { name = requestModel.client.ToString() });
 
                         if (customerInformationModel != null)
                         {
                             c.Phone=new Phone();
-                            c.Phone.Number = customerInformationModel.telephoneNumber;
-                            c.Phone.CountryCode = customerInformationModel.countryCode;
-                            c.Phone.Prefix = customerInformationModel.cityCode;
+                            c.Phone.Number = Convert.ToInt32(customerInformationModel.customerList[0].gsmPhone.number) ;
+                            c.Phone.CountryCode = Convert.ToInt32(customerInformationModel.customerList[0].gsmPhone.country);
+                            c.Phone.Prefix = Convert.ToInt32(customerInformationModel.customerList[0].gsmPhone.prefix);
                         }
                     }
                     returnValue.Consumers.Add(new GetSourceConsumersResponse.Consumer

@@ -7,19 +7,13 @@ using System.Threading.Tasks;
 
 namespace bbt.framework.dengage.Business
 {
-
-
-
-
-
-
     public class BGetCustomerInfo : BaseRefit<IGetCustomerInfo>
     {
-        public BGetCustomerInfo(ILogger logger):base("https://test-notification-enrichment.burgan.com.tr", string.Empty, logger)
+        public BGetCustomerInfo(ILogger logger):base("https://test-entegrasyon-customerapi.burgan.com.tr", string.Empty, logger)
         {
 
         }
-        public override string controllerName => "login";
+        public override string controllerName => "CustomerSearch";
 
         public async Task<CustomerInformationModel> GetTelephoneNumber(GetTelephoneNumberRequestModel request)
         {

@@ -10,7 +10,7 @@ namespace bbt.framework.dengage.Business
 {
     public interface IGetCustomerInfo
     {
-        [Post("/Customer/GetTelephoneNumber")]        
+        [Post("/CustomerSearch")]        
         Task<CustomerInformationModel> GetTelephoneNumber([Body(BodySerializationMethod.Serialized)] GetTelephoneNumberRequestModel model);
     }
 }
