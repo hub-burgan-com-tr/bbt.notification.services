@@ -16,6 +16,10 @@ namespace bbt.service.notification_profile.Helper
         {
             return _config.GetSection("ConnectionStrings:ReminderConnectionString").Value;
         }
+        public string GetCustomerProfileEndpoint()
+        {
+            return _config.GetSection("CustomerProfileEndpoint").Value;
+        }
     }
 
 }
