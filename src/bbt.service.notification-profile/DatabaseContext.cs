@@ -1,11 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-
+using Notification.Profile.Model.Database;
 
 public class DatabaseContext : DbContext
 {
     public DbSet<Source> Sources { get; set; }
     public DbSet<Consumer> Consumers { get; set; }
     public DbSet<SourceService> SourceServices { get; set; }
+    public DbSet<Log> Logs { get; set; }
+    public DbSet<LogDetail> LogDetails { get; set; }
     public string DbPath { get; private set; }
     public DatabaseContext()
     {
