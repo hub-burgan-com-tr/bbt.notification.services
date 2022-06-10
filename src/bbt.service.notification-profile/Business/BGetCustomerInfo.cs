@@ -1,25 +1,16 @@
 ﻿using Notification.Profile.Business;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using bbt.service.notification_profile.Helper;
 
 namespace bbt.framework.dengage.Business
 {
-
-
-
-
-
-
     public class BGetCustomerInfo : BaseRefit<IGetCustomerInfo>
     {
-        public BGetCustomerInfo(ILogger logger):base("https://test-notification-enrichment.burgan.com.tr", string.Empty, logger)
+         static ConfigurationHelper configurationHelper=new ConfigurationHelper();
+        public BGetCustomerInfo(ILogger logger):base(configurationHelper.GetCustomerProfileEndpoint(), string.Empty, logger)
         {
 
         }
-        public override string controllerName => "login";
+        public override string controllerName => "CustomerSearch";
 
         public async Task<CustomerInformationModel> GetTelephoneNumber(GetTelephoneNumberRequestModel request)
         {
