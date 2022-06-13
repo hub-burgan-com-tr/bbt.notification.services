@@ -55,7 +55,6 @@ public class ConsumerController : ControllerBase
                     s.User == user &&
                     (source == null || source.HasValue || s.SourceId == source.Value))
                 .AsNoTracking();
-                consumers = null;
                 returnValue.Consumers = consumers.Select(c =>
                     new GetUserConsumersResponse.Consumer
                     {
