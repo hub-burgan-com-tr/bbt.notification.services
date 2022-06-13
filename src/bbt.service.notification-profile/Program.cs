@@ -4,6 +4,7 @@ using Elastic.Apm;
 using Elastic.Apm.NetCoreAll;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using bbt.service.notification_profile.Business;
 using Notification.Profile.Business;
 using Notification.Profile.Helper;
 
@@ -39,6 +40,7 @@ builder.Services.AddSwaggerGen(c =>
                 c.CustomSchemaIds(x => x.FullName);
             });
 builder.Services.AddDbContext<DatabaseContext>();
+builder.Services.AddScoped<IinstandReminder, BInstantReminder>();
 builder.Services.AddSingleton(n => Agent.Tracer);
 var app = builder.Build();
 
@@ -63,13 +65,6 @@ app.UseEndpoints(endpoints =>
         });
 
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-
-    var context = services.GetRequiredService<DatabaseContext>();    
-    context.Database.Migrate();
-}
 
 
 app.Run();
