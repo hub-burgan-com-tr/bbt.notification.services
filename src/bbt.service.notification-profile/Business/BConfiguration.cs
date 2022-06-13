@@ -1,6 +1,6 @@
 ﻿namespace Notification.Profile.Business
 {
-    public class BConfiguration:IConfiguration
+    public class BConfiguration:IConfigurations
     {
     }
 }

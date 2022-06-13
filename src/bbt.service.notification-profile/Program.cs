@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 // Add services to the container.
-builder.Services.AddScoped<ILogHelper, LogHelper>();
+
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -41,6 +41,10 @@ builder.Services.AddSwaggerGen(c =>
             });
 builder.Services.AddDbContext<DatabaseContext>();
 builder.Services.AddScoped<IinstandReminder, BInstantReminder>();
+builder.Services.AddScoped<ISource, BSource>();
+builder.Services.AddScoped<IConfigurations, BConfiguration>();
+builder.Services.AddScoped<IConsumer, BConsumer>();
+builder.Services.AddScoped<ILogHelper, LogHelper>();
 builder.Services.AddSingleton(n => Agent.Tracer);
 var app = builder.Build();
 
