@@ -3,23 +3,28 @@ using System.ComponentModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.Json;
+using Elastic.Apm.Api;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Notification.Profile.Helper;
 using Swashbuckle.AspNetCore.Annotations;
 
 [ApiController]
 [Route("[controller]")]
 public class ConfigurationController : ControllerBase
 {
-
+    private readonly ITracer _tracer;
+    private readonly ILogHelper _logHelper;
     private readonly ILogger<ConfigurationController> _logger;
 
-    public ConfigurationController(ILogger<ConfigurationController> logger)
+    public ConfigurationController(ILogger<ConfigurationController> logger, ITracer tracer,ILogHelper logHelper)
     {
         _logger = logger;
+        _tracer = tracer;
+        _logHelper = logHelper;
     }
 
     [SwaggerOperation(
@@ -33,18 +38,27 @@ public class ConfigurationController : ControllerBase
         [FromRoute] long client
     )
     {
-
+        var span = _tracer.CurrentTransaction?.StartSpan("GetUsersSpan", "GetUsers");
         GetClientUsersResponse returnValue = new GetClientUsersResponse();
-
-        using (var db = new DatabaseContext())
+        try
         {
-            var users = db.Consumers.Where(s => s.Client == client)
-                .Select(m => m.User)
-                .Distinct()
-                .ToList();
+            using (var db = new DatabaseContext())
+            {
+                var users = db.Consumers.Where(s => s.Client == client)
+                    .Select(m => m.User)
+                    .Distinct()
+                    .ToList();
 
-            returnValue.Users = users;
+                returnValue.Users = users;
 
+            }
+        }
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+        
+            _logHelper.LogCreate(client, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
         }
         return Ok(returnValue);
     }
@@ -61,22 +75,26 @@ public class ConfigurationController : ControllerBase
       [FromRoute] long user)
 
     {
+        var span = _tracer.CurrentTransaction?.StartSpan("GetUserConsumersSpan", "GetUserConsumers");
         GetConsumerTreeResponse returnValue = new GetConsumerTreeResponse();
-
-        using (var db = new DatabaseContext())
+     
+        try
         {
-            var consumers = db.Consumers.Where(s =>
-                s.Client == client &&
-                s.User == user
-            ).ToList();
+            using (var db = new DatabaseContext())
+            {
+                var consumers = db.Consumers.Where(s =>
+                    s.Client == client &&
+                    s.User == user
+                ).ToList();
 
-            var sources = db.Sources.Select(x => x.Id);
-            List<GetConsumerTreeResponse.ConfUser> confUsers = new List<GetConsumerTreeResponse.ConfUser>();
+                var sources = db.Sources.Select(x => x.Id);
+                List<GetConsumerTreeResponse.ConfUser> confUsers = new List<GetConsumerTreeResponse.ConfUser>();
 
-            
+
                 foreach (var sourceId in sources)
                 {
-                    var consumer = consumers.FirstOrDefault(x => sourceId == x.SourceId );
+                    consumers = null;
+                    var consumer = consumers.FirstOrDefault(x => sourceId == x.SourceId);
 
                     if (consumer != null)
                     {
@@ -110,13 +128,21 @@ public class ConfigurationController : ControllerBase
                         });
 
                     }
+                }
 
-                
-
+                returnValue.Consumers = confUsers;
             }
-
-            returnValue.Consumers = confUsers;
-
+        }
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+            var data = new { 
+                client = client,
+                user = user
+            };
+            _logHelper.LogCreate(data, returnValue, MethodBase.GetCurrentMethod().Name,e.Message);
+           
+            return this.StatusCode(500, e.Message);
         }
 
         return Ok(returnValue);
@@ -153,11 +179,27 @@ public class ConfigurationController : ControllerBase
 
     )
     {
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("UpdateEmailSpan", "UpdateEmail");
+        int result=0;
+        try
         {
-            var result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET Email = '{data.NewEmail}' WHERE Email = '{data.OldEmail}' AND [User] = {user}");
+            using (var db = new DatabaseContext())
+            {
+                result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET Email = '{data.NewEmail}' WHERE Email = '{data.OldEmail}' AND [User] = {user}");
 
-            return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+            }
+        }
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+            var req = new
+            {
+                user = user,
+                data = data
+            };
+            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
         }
     }
 
@@ -174,9 +216,13 @@ public class ConfigurationController : ControllerBase
 
     )
     {
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("PostUpdatePhoneRequestSpan", "PostUpdatePhoneRequest");
+        int result = 0;
+        try
         {
-            var result = db.Database.ExecuteSqlInterpolated($@"UPDATE [Consumers] 
+            using (var db = new DatabaseContext())
+            {
+                 result = db.Database.ExecuteSqlInterpolated($@"UPDATE [Consumers] 
                         SET Phone_CountryCode = {data.NewPhone.CountryCode},  
                             Phone_Prefix = {data.NewPhone.Prefix},
                             Phone_Number = {data.NewPhone.Number} 
@@ -185,7 +231,19 @@ public class ConfigurationController : ControllerBase
                               Phone_Number = {data.OldPhone.Number} AND 
                               [User] = {user}");
 
-            return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+            }
+        }
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+            var req = new
+            {
+                user = user,
+                data = data
+            };
+            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
         }
 
     }
@@ -204,11 +262,27 @@ public class ConfigurationController : ControllerBase
 
     )
     {
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("UpdateDeviceSpan", "UpdateDevice");
+        int result = 0;
+        try
         {
+            using (var db = new DatabaseContext())
+            {
 
-            var result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET DeviceKey = '{data.NewDeviceKey}' WHERE DeviceKey = '{data.OldDeviceKey}' AND [User] = {user}");
-            return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+                result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET DeviceKey = '{data.NewDeviceKey}' WHERE DeviceKey = '{data.OldDeviceKey}' AND [User] = {user}");
+                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
+            }
+        }
+        catch (Exception e)
+        {
+            span?.CaptureException(e);
+            var req = new
+            {
+                user = user,
+                data = data
+            };
+            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
         }
     }
 

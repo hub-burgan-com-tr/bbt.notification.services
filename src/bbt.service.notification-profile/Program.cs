@@ -1,15 +1,28 @@
 using System.Reflection;
 using bbt.framework.dengage.Business;
+using Elastic.Apm;
+using Elastic.Apm.NetCoreAll;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Notification.Profile.Business;
+using Notification.Profile.Helper;
 
+IConfigurationRoot configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{GetEnviroment()}.json", false, true)
+    .AddEnvironmentVariables()
+    .Build();
 
+string? GetEnviroment()
+{
+    return Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+}
 var builder = WebApplication.CreateBuilder(args);
 
 
 // Add services to the container.
-
+builder.Services.AddScoped<ILogHelper, LogHelper>();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -26,7 +39,7 @@ builder.Services.AddSwaggerGen(c =>
                 c.CustomSchemaIds(x => x.FullName);
             });
 builder.Services.AddDbContext<DatabaseContext>();
-
+builder.Services.AddSingleton(n => Agent.Tracer);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -42,6 +55,7 @@ app.UseSwaggerUI(c =>
 //}
 app.UseRouting();
 app.UseAuthorization();
+app.UseAllElasticApm(configuration);
 app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();

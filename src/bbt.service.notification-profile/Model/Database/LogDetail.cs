@@ -1,7 +1,11 @@
-﻿namespace Notification.Profile.Model.Database
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Notification.Profile.Model.Database
 {
     public class LogDetail
     {
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public int LogId { get; set; }
         public string ResponseData { get; set; }

@@ -7,6 +7,9 @@ using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.Annotations;
 using Notification.Profile.Business;
 using bbt.framework.dengage.Business;
+using Elastic.Apm.Api;
+using Notification.Profile.Helper;
+using System.Reflection;
 
 
 
@@ -16,12 +19,15 @@ using bbt.framework.dengage.Business;
 [Route("[controller]")]
 public class SourceController : ControllerBase
 {
-
+    private readonly ITracer _tracer;
     private readonly ILogger<SourceController> _logger;
+    private readonly ILogHelper _logHelper;
 
-    public SourceController(ILogger<SourceController> logger)
+    public SourceController(ILogger<SourceController> logger, ITracer tracer, ILogHelper logHelper)
     {
         _logger = logger;
+        _tracer = tracer;
+        _logHelper = logHelper;
     }
 
     [SwaggerOperation(
@@ -33,46 +39,56 @@ public class SourceController : ControllerBase
 
     public IActionResult GetSources()
     {
-        List<Source> sources;
-
-        using (var db = new DatabaseContext())
+        List<Source> sources=null;
+        var span = _tracer.CurrentTransaction?.StartSpan("GetSourcesSpan", "GetSources");
+        try
         {
-            sources = db.Sources
-                .Include(s => s.Parameters)
-                .Include(s => s.Children)
-                .ToList();
-        }
-
-
-        return Ok(new GetSourcesResponse
-        {
-            Sources = sources.Where(s => s.ParentId == null).Select(s => BuildSource(s)).ToList()
-        }
-        );
-
-        GetSourcesResponse.Source BuildSource(Source s)
-        {
-            return new GetSourcesResponse.Source
+            using (var db = new DatabaseContext())
             {
-                Id = s.Id,
-                Title = new GetSourcesResponse.Source.TitleLabel { EN = s.Title_EN, TR = s.Title_TR },
-                Children = s.Children.Select(c => BuildSource(c)).ToList(),
-                Parameters = s.Parameters.Select(p => new GetSourcesResponse.Source.SourceParameter
-                {
-                    JsonPath = p.JsonPath,
-                    Type = p.Type,
-                    Title = new GetSourcesResponse.Source.TitleLabel { EN = p.Title_EN, TR = p.Title_TR },
-                }).ToList(),
-                Topic = s.Topic,
-                DisplayType = s.DisplayType,
-                ClientIdJsonPath = s.ClientIdJsonPath,
-                ApiKey = s.ApiKey,
-                Secret = s.Secret,
-                PushServiceReference = s.PushServiceReference,
-                SmsServiceReference = s.SmsServiceReference,
-                EmailServiceReference = s.EmailServiceReference
-            };
+                sources = db.Sources
+                    .Include(s => s.Parameters)
+                    .Include(s => s.Children)
+                    .ToList();
+            }
 
+
+            return Ok(new GetSourcesResponse
+            {
+                Sources = sources.Where(s => s.ParentId == null).Select(s => BuildSource(s)).ToList()
+            }
+            );
+
+            GetSourcesResponse.Source BuildSource(Source s)
+            {
+                return new GetSourcesResponse.Source
+                {
+                    Id = s.Id,
+                    Title = new GetSourcesResponse.Source.TitleLabel { EN = s.Title_EN, TR = s.Title_TR },
+                    Children = s.Children.Select(c => BuildSource(c)).ToList(),
+                    Parameters = s.Parameters.Select(p => new GetSourcesResponse.Source.SourceParameter
+                    {
+                        JsonPath = p.JsonPath,
+                        Type = p.Type,
+                        Title = new GetSourcesResponse.Source.TitleLabel { EN = p.Title_EN, TR = p.Title_TR },
+                    }).ToList(),
+                    Topic = s.Topic,
+                    DisplayType = s.DisplayType,
+                    ClientIdJsonPath = s.ClientIdJsonPath,
+                    ApiKey = s.ApiKey,
+                    Secret = s.Secret,
+                    PushServiceReference = s.PushServiceReference,
+                    SmsServiceReference = s.SmsServiceReference,
+                    EmailServiceReference = s.EmailServiceReference
+                };
+
+            }
+        }
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+          
+            _logHelper.LogCreate(null, sources, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
         }
     }
 
@@ -90,46 +106,55 @@ public class SourceController : ControllerBase
 
  )
     {
+        var span = _tracer.CurrentTransaction?.StartSpan("GetSourceByIdSpan", "GetSourceById");
         GetSourceTopicByIdResponse returnValue = new GetSourceTopicByIdResponse();
-
-        Source source = null;
-        List<SourceServicesUrl> servicesUrls = null;
-        using (var db = new DatabaseContext())
+        try
         {
-            source = db.Sources.Where(s => s.Id == id).FirstOrDefault();
-            servicesUrls = db.SourceServices.Where(s => id == s.SourceId).Select(x => new SourceServicesUrl
+          
+
+            Source source = null;
+            List<SourceServicesUrl> servicesUrls = null;
+            using (var db = new DatabaseContext())
             {
-                Id = x.Id,
-                ServiceUrl = x.ServiceUrl
-            }).ToList();
+                source = db.Sources.Where(s => s.Id == id).FirstOrDefault();
+                servicesUrls = db.SourceServices.Where(s => id == s.SourceId).Select(x => new SourceServicesUrl
+                {
+                    Id = x.Id,
+                    ServiceUrl = x.ServiceUrl
+                }).ToList();
+            }
+
+            if (source == null)
+                return new ObjectResult(id) { StatusCode = 460 };
+
+
+
+            SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
+
+            returnValue.Id = source.Id;
+            returnValue.Topic = source.Topic;
+            returnValue.SmsServiceReference = source.SmsServiceReference;
+            returnValue.EmailServiceReference = source.EmailServiceReference;
+            returnValue.PushServiceReference = source.PushServiceReference;
+            returnValue.Title_TR = source.Title_TR;
+            returnValue.Title_EN = source.Title_EN;
+            returnValue.ParentId = source.ParentId;
+            returnValue.DisplayType = source.DisplayType;
+            returnValue.ApiKey = source.ApiKey;
+            returnValue.Secret = source.Secret;
+            returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
+            returnValue.KafkaUrl = source.KafkaUrl;
+            returnValue.ServiceUrlList = servicesUrls;
+            return Ok(returnValue);
         }
-
-        if (source == null)
-            return new ObjectResult(id) { StatusCode = 460 };
-
-
-
-        SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
-
-        returnValue.Id = source.Id;
-        returnValue.Topic = source.Topic;
-        returnValue.SmsServiceReference = source.SmsServiceReference;
-        returnValue.EmailServiceReference = source.EmailServiceReference;
-        returnValue.PushServiceReference = source.PushServiceReference;
-        returnValue.Title_TR = source.Title_TR;
-        returnValue.Title_EN = source.Title_EN;
-        returnValue.ParentId = source.ParentId;
-        returnValue.DisplayType = source.DisplayType;
-        returnValue.ApiKey = source.ApiKey;
-        returnValue.Secret = source.Secret;
-        returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
-        returnValue.KafkaUrl = source.KafkaUrl;
-        returnValue.ServiceUrlList = servicesUrls;
-        return Ok(returnValue);
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+          
+            _logHelper.LogCreate(id, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
+        }
     }
-
-
-
 
     [SwaggerOperation(
              Summary = "Adds new data sources",
@@ -140,23 +165,33 @@ public class SourceController : ControllerBase
     public IActionResult Post(
      [FromBody] PostSourceRequest data)
     {
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("PostSpan", "Post");
+        try
         {
-            db.Add(new Source
+            using (var db = new DatabaseContext())
             {
-                Id = data.Id,
-                //Title = data.Title,
-                Topic = data.Topic,
-                ApiKey = data.ApiKey,
-                Secret = data.Secret,
-                PushServiceReference = data.PushServiceReference,
-                SmsServiceReference = data.SmsServiceReference,
-                EmailServiceReference = data.EmailServiceReference
-            });
+                db.Add(new Source
+                {
+                    Id = data.Id,
+                    //Title = data.Title,
+                    Topic = data.Topic,
+                    ApiKey = data.ApiKey,
+                    Secret = data.Secret,
+                    PushServiceReference = data.PushServiceReference,
+                    SmsServiceReference = data.SmsServiceReference,
+                    EmailServiceReference = data.EmailServiceReference
+                });
 
-            db.SaveChanges();
+                db.SaveChanges();
+            }
+
         }
-
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+            _logHelper.LogCreate(data, "StatusCode:500", MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
+        }
 
         return Ok();
     }
@@ -173,26 +208,39 @@ public class SourceController : ControllerBase
         [FromRoute] int id,
         [FromBody] PatchSourceRequest data)
     {
-
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("PatchSourceRequestSpan", "PatchSourceRequest");
+        try
         {
-            var source = db.Sources.FirstOrDefault(s => s.Id == id);
+            using (var db = new DatabaseContext())
+            {
+                var source = db.Sources.FirstOrDefault(s => s.Id == id);
 
-            if (source == null)
-                return new ObjectResult(id) { StatusCode = 460 };
+                if (source == null)
+                    return new ObjectResult(id) { StatusCode = 460 };
 
-            //if (data.Title != null) source.Title = data.Title;
-            if (data.Topic != null) source.Topic = data.Topic;
-            if (data.ApiKey != null) source.ApiKey = data.ApiKey;
-            if (data.Secret != null) source.Secret = data.Secret;
-            if (data.PushServiceReference != null) source.PushServiceReference = data.PushServiceReference;
-            if (data.SmsServiceReference != null) source.SmsServiceReference = data.SmsServiceReference;
-            if (data.EmailServiceReference != null) source.EmailServiceReference = data.EmailServiceReference;
+                //if (data.Title != null) source.Title = data.Title;
+                if (data.Topic != null) source.Topic = data.Topic;
+                if (data.ApiKey != null) source.ApiKey = data.ApiKey;
+                if (data.Secret != null) source.Secret = data.Secret;
+                if (data.PushServiceReference != null) source.PushServiceReference = data.PushServiceReference;
+                if (data.SmsServiceReference != null) source.SmsServiceReference = data.SmsServiceReference;
+                if (data.EmailServiceReference != null) source.EmailServiceReference = data.EmailServiceReference;
 
-            db.SaveChanges();
+                db.SaveChanges();
+            }
+
         }
-
-
+        catch(Exception e)
+        {
+            span?.CaptureException(e);
+            var req = new
+            {
+                id = id,
+                data = data
+            };
+            _logHelper.LogCreate(req, "StatusCode:500", MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
+        }
         return Ok();
     }
 
@@ -207,23 +255,31 @@ public class SourceController : ControllerBase
     [SwaggerResponse(461, "Source has consumer(s)", typeof(Guid))]
     public IActionResult Delete([FromRoute] int id)
     {
-
-        using (var db = new DatabaseContext())
+        var span = _tracer.CurrentTransaction?.StartSpan("DeleteSpan", "Delete");
+        try
         {
-            var source = db.Sources.FirstOrDefault(s => s.Id == id);
+            using (var db = new DatabaseContext())
+            {
+                var source = db.Sources.FirstOrDefault(s => s.Id == id);
 
-            if (source == null)
-                return new ObjectResult(id) { StatusCode = 460 };
+                if (source == null)
+                    return new ObjectResult(id) { StatusCode = 460 };
 
-            var references = db.Consumers.FirstOrDefault(c => c.SourceId == id);
+                var references = db.Consumers.FirstOrDefault(c => c.SourceId == id);
 
-            if (references != null)
-                return new ObjectResult(id) { StatusCode = 461 };
+                if (references != null)
+                    return new ObjectResult(id) { StatusCode = 461 };
 
-            db.Remove(source);
-            db.SaveChanges();
+                db.Remove(source);
+                db.SaveChanges();
+            }
         }
-
+        catch (Exception e)
+        {
+            span?.CaptureException(e);
+            _logHelper.LogCreate(id, "StatusCode:500", MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
+        }
         return Ok();
     }
 
@@ -238,7 +294,7 @@ public class SourceController : ControllerBase
     public async Task<ActionResult<GetSourceConsumersResponse>> GetSourceConsumers([FromBody] GetSourceConsumersRequestBody requestModel)
     {
         GetSourceConsumersResponse returnValue = new GetSourceConsumersResponse { Consumers = new List<GetSourceConsumersResponse.Consumer>() };
-
+        var span = _tracer.CurrentTransaction?.StartSpan("GetSourceConsumersSpan", "GetSourceConsumers");
         try
         {
 
@@ -306,6 +362,8 @@ public class SourceController : ControllerBase
         }
         catch (Exception e)
         {
+            span?.CaptureException(e);
+            _logHelper.LogCreate(requestModel, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
             Console.WriteLine("CATCH " + e.Message);
             return new ObjectResult(null) { StatusCode = 500 };
         }

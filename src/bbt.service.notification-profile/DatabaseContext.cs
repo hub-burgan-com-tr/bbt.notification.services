@@ -126,7 +126,13 @@ public class DatabaseContext : DbContext
               ServiceUrl = "X",
               
           });
+        builder.Entity<Log>()
+                    .Property(f => f.Id)
+                    .ValueGeneratedOnAdd();
 
+        builder.Entity<LogDetail>()
+                  .Property(f => f.Id)
+                  .ValueGeneratedOnAdd();
 
     }
 }
