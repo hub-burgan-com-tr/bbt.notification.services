@@ -1,5 +1,5 @@
 
-public class GetCustomerPermissionResponse
+public class GetInstantCustomerPermissionResponse
 {
     public bool showWithoutLogin { get; set; }
     public List<ReminderGet> reminders { get; set; }

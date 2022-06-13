@@ -1,8 +1,6 @@
 using System.Reflection;
-using bbt.framework.dengage.Business;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using Notification.Profile.Business;
+using bbt.service.notification_profile.Business;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +24,8 @@ builder.Services.AddSwaggerGen(c =>
                 c.CustomSchemaIds(x => x.FullName);
             });
 builder.Services.AddDbContext<DatabaseContext>();
+builder.Services.AddScoped<IinstandReminder, BInstantReminder>();
+
 
 var app = builder.Build();
 
@@ -49,13 +49,6 @@ app.UseEndpoints(endpoints =>
         });
 
 
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-
-    var context = services.GetRequiredService<DatabaseContext>();    
-    context.Database.Migrate();
-}
 
 
 app.Run();
