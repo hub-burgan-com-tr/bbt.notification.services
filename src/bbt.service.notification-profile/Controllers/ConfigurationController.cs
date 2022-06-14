@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Notification.Profile.Business;
 using Notification.Profile.Helper;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -19,12 +20,15 @@ public class ConfigurationController : ControllerBase
     private readonly ITracer _tracer;
     private readonly ILogHelper _logHelper;
     private readonly ILogger<ConfigurationController> _logger;
+    private readonly IConfigurations _Iconfigurations;
 
-    public ConfigurationController(ILogger<ConfigurationController> logger, ITracer tracer,ILogHelper logHelper)
+    public ConfigurationController(ILogger<ConfigurationController> logger, ITracer tracer, ILogHelper logHelper, IConfigurations configuraitons)
     {
         _logger = logger;
         _tracer = tracer;
         _logHelper = logHelper;
+        _Iconfigurations = configuraitons;
+
     }
 
     [SwaggerOperation(
@@ -42,21 +46,12 @@ public class ConfigurationController : ControllerBase
         GetClientUsersResponse returnValue = new GetClientUsersResponse();
         try
         {
-            using (var db = new DatabaseContext())
-            {
-                var users = db.Consumers.Where(s => s.Client == client)
-                    .Select(m => m.User)
-                    .Distinct()
-                    .ToList();
-
-                returnValue.Users = users;
-
-            }
+            returnValue = _Iconfigurations.GetUsers(client);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
-        
+
             _logHelper.LogCreate(client, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
@@ -77,71 +72,21 @@ public class ConfigurationController : ControllerBase
     {
         var span = _tracer.CurrentTransaction?.StartSpan("GetUserConsumersSpan", "GetUserConsumers");
         GetConsumerTreeResponse returnValue = new GetConsumerTreeResponse();
-     
+
         try
         {
-            using (var db = new DatabaseContext())
-            {
-                var consumers = db.Consumers.Where(s =>
-                    s.Client == client &&
-                    s.User == user
-                ).ToList();
-
-                var sources = db.Sources.Select(x => x.Id);
-                List<GetConsumerTreeResponse.ConfUser> confUsers = new List<GetConsumerTreeResponse.ConfUser>();
-
-
-                foreach (var sourceId in sources)
-                {
-                    consumers = null;
-                    var consumer = consumers.FirstOrDefault(x => sourceId == x.SourceId);
-
-                    if (consumer != null)
-                    {
-                        confUsers.Add(new GetConsumerTreeResponse.ConfUser
-                        {
-                            Source = consumer.SourceId,
-                            Filter = consumer.Filter,
-                            IsPushEnabled = consumer.IsPushEnabled,
-                            DeviceKey = consumer.DeviceKey,
-                            IsSmsEnabled = consumer.IsSmsEnabled,
-                            Phone = consumer.Phone,
-                            IsEmailEnabled = consumer.IsEmailEnabled,
-                            Email = consumer.Email
-                        });
-
-
-                    }
-
-                    else
-                    {
-                        confUsers.Add(new GetConsumerTreeResponse.ConfUser
-                        {
-                            Source = sourceId,
-                            Filter = null,
-                            IsPushEnabled = false,
-                            DeviceKey = null,
-                            IsSmsEnabled = false,
-                            Phone = null,
-                            IsEmailEnabled = false,
-                            Email = null
-                        });
-
-                    }
-                }
-
-                returnValue.Consumers = confUsers;
-            }
+            returnValue = _Iconfigurations.GetUserConsumers(client, user);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
-            var data = new { 
+            var data = new
+            {
                 client = client,
                 user = user
             };
-            _logHelper.LogCreate(data, returnValue, MethodBase.GetCurrentMethod().Name,e.Message);
-           
+            _logHelper.LogCreate(data, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
+
             return this.StatusCode(500, e.Message);
         }
 
@@ -180,17 +125,12 @@ public class ConfigurationController : ControllerBase
     )
     {
         var span = _tracer.CurrentTransaction?.StartSpan("UpdateEmailSpan", "UpdateEmail");
-        int result=0;
+        PostUpdateResponse postUpdateResponse = new PostUpdateResponse();
         try
         {
-            using (var db = new DatabaseContext())
-            {
-                result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET Email = '{data.NewEmail}' WHERE Email = '{data.OldEmail}' AND [User] = {user}");
-
-                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
-            }
+            postUpdateResponse = _Iconfigurations.UpdateEmail(user, data);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
             var req = new
@@ -198,9 +138,10 @@ public class ConfigurationController : ControllerBase
                 user = user,
                 data = data
             };
-            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            _logHelper.LogCreate(req, postUpdateResponse, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
+        return Ok(postUpdateResponse);
     }
 
     [SwaggerOperation(
@@ -217,24 +158,12 @@ public class ConfigurationController : ControllerBase
     )
     {
         var span = _tracer.CurrentTransaction?.StartSpan("PostUpdatePhoneRequestSpan", "PostUpdatePhoneRequest");
-        int result = 0;
+        PostUpdateResponse postUpdateResponse = new PostUpdateResponse();
         try
         {
-            using (var db = new DatabaseContext())
-            {
-                 result = db.Database.ExecuteSqlInterpolated($@"UPDATE [Consumers] 
-                        SET Phone_CountryCode = {data.NewPhone.CountryCode},  
-                            Phone_Prefix = {data.NewPhone.Prefix},
-                            Phone_Number = {data.NewPhone.Number} 
-                        WHERE Phone_CountryCode = {data.OldPhone.CountryCode} AND
-                              Phone_Prefix = {data.OldPhone.Prefix} AND 
-                              Phone_Number = {data.OldPhone.Number} AND 
-                              [User] = {user}");
-
-                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
-            }
+            postUpdateResponse = _Iconfigurations.UpdatePhone(user, data);
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
             var req = new
@@ -242,10 +171,10 @@ public class ConfigurationController : ControllerBase
                 user = user,
                 data = data
             };
-            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            _logHelper.LogCreate(req, postUpdateResponse, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
-
+        return Ok(postUpdateResponse);
     }
 
 
@@ -263,15 +192,10 @@ public class ConfigurationController : ControllerBase
     )
     {
         var span = _tracer.CurrentTransaction?.StartSpan("UpdateDeviceSpan", "UpdateDevice");
-        int result = 0;
+        PostUpdateResponse postUpdateResponse = new PostUpdateResponse();
         try
         {
-            using (var db = new DatabaseContext())
-            {
-
-                result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET DeviceKey = '{data.NewDeviceKey}' WHERE DeviceKey = '{data.OldDeviceKey}' AND [User] = {user}");
-                return Ok(new PostUpdateResponse { UpdatedRecordCount = result });
-            }
+            postUpdateResponse = _Iconfigurations.UpdateDevice(user, data);
         }
         catch (Exception e)
         {
@@ -281,9 +205,10 @@ public class ConfigurationController : ControllerBase
                 user = user,
                 data = data
             };
-            _logHelper.LogCreate(req, result, MethodBase.GetCurrentMethod().Name, e.Message);
+            _logHelper.LogCreate(req, postUpdateResponse, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
+        return Ok(postUpdateResponse);
     }
 
 

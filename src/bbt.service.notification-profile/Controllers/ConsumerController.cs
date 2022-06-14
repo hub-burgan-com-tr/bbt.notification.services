@@ -23,12 +23,14 @@ public class ConsumerController : ControllerBase
     private readonly ILogger<ConsumerController> _logger;
     private readonly ITracer _tracer;
     private readonly ILogHelper _logHelper;
+    private readonly IConsumer _Iconsumer;
 
-    public ConsumerController(ILogger<ConsumerController> logger, ITracer tracer, ILogHelper logHelper)
+    public ConsumerController(ILogger<ConsumerController> logger, ITracer tracer, ILogHelper logHelper, IConsumer Iconsumer)
     {
         _logger = logger;
         _tracer = tracer;
         _logHelper = logHelper;
+        _Iconsumer = Iconsumer;
     }
 
     [SwaggerOperation(
@@ -48,28 +50,7 @@ public class ConsumerController : ControllerBase
         var span = _tracer.CurrentTransaction?.StartSpan("GetUserConsumersSpan", "GetUserConsumers");
         try
         {
-            using (var db = new DatabaseContext())
-            {
-                var consumers = db.Consumers.Where(s =>
-                    s.Client == client &&
-                    s.User == user &&
-                    (source == null || source.HasValue || s.SourceId == source.Value))
-                .AsNoTracking();
-                returnValue.Consumers = consumers.Select(c =>
-                    new GetUserConsumersResponse.Consumer
-                    {
-                        Source = c.SourceId,
-                        Filter = c.Filter,
-                        IsPushEnabled = c.IsPushEnabled,
-                        DeviceKey = c.DeviceKey,
-                        IsSmsEnabled = c.IsSmsEnabled,
-                        Phone = c.Phone,
-                        IsEmailEnabled = c.IsEmailEnabled,
-                        Email = c.Email
-                    }
-
-                ).ToList();
-            }
+            returnValue=_Iconsumer.GetUserConsumers(client, user, source);  
         }
         catch(Exception e)
         {
