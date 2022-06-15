@@ -1,6 +1,8 @@
 
 
-public class GetSourcesResponse
+using Notification.Profile.Model.BaseResponseModel;
+
+public class GetSourcesResponse:BaseResponseModel
 {
     public List<Source> Sources { get; set; }
     public class Source

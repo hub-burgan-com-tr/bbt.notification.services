@@ -1,6 +1,8 @@
 
 
-public class GetSourceTopicByIdResponse
+using Notification.Profile.Model.BaseResponseModel;
+
+public class GetSourceTopicByIdResponse: BaseResponseModel
 {
 
         public int Id { get; set; }

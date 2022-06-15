@@ -27,6 +27,7 @@ namespace Notification.Profile.Helper
                             LogId = logId,
                             RequestData = System.Text.Json.JsonSerializer.Serialize(requestModel),
                             ResponseData = System.Text.Json.JsonSerializer.Serialize(responseModel),
+                            RequestDate=DateTime.Now,
                             ErrorMessage = errorMessage
                         });
                         db.SaveChanges();

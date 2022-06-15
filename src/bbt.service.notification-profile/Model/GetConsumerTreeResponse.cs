@@ -1,4 +1,7 @@
-public class GetConsumerTreeResponse {
+using Notification.Profile.Model.BaseResponseModel;
+
+public class GetConsumerTreeResponse :BaseResponseModel
+{
     public List<ConfUser> Consumers { get; set; }
 
     public class ConfUser

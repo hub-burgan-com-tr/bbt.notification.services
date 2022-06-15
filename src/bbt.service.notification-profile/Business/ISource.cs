@@ -7,9 +7,9 @@
 
         void Post(PostSourceRequest data);
 
-        void Patch(int id, PatchSourceRequest data);
+        SourceResponseModel Patch(int id, PatchSourceRequest data);
 
-        void Delete(int id);
+        SourceResponseModel Delete(int id);
 
         GetSourceConsumersResponse GetSourceConsumers(GetSourceConsumersRequestBody requestModel);
 

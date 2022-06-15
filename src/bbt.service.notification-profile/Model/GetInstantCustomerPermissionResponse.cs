@@ -1,5 +1,7 @@
 
-public class GetInstantCustomerPermissionResponse
+using Notification.Profile.Model.BaseResponseModel;
+
+public class GetInstantCustomerPermissionResponse:BaseResponseModel
 {
     public bool showWithoutLogin { get; set; }
     public List<ReminderGet> reminders { get; set; }

@@ -2,10 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Notification.Profile.Enum;
+using Notification.Profile.Helper;
 
 namespace Notification.Profile.Business
 {
-    public class BSource:ISource
+    public class BSource : ISource
     {
         private readonly IConfiguration _configuration;
 
@@ -14,26 +16,35 @@ namespace Notification.Profile.Business
             _configuration = configuration;
         }
 
-        public void Delete(int id)
+        public SourceResponseModel Delete(int id)
         {
-          
+            var returnValue = new SourceResponseModel();
             using (var db = new DatabaseContext())
             {
                 var source = db.Sources.FirstOrDefault(s => s.Id == id);
-
-                //Sor
-                //if (source == null)
-                //    return new ObjectResult(id) { StatusCode = 460 };
+                if (source == null)
+                {
+                    returnValue.StatusCode = EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode460); 
+                    returnValue.MessageList.Add(StructStatusCode.StatusCode460.ToString());
+                    returnValue.Result = ResultEnum.Error;
+                    return returnValue;
+                    //  return new ObjectResult(id) { StatusCode = 460 };
+                }
 
                 var references = db.Consumers.FirstOrDefault(c => c.SourceId == id);
-
-                //Sor
-                //if (references != null)
-                //    return new ObjectResult(id) { StatusCode = 461 };
+                if (references != null)
+                {
+                    returnValue.StatusCode = EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode461);
+                    returnValue.MessageList.Add(StructStatusCode.StatusCode461.ToString());
+                    returnValue.Result = ResultEnum.Error;
+                    return returnValue;
+                }
 
                 db.Remove(source);
                 db.SaveChanges();
+                returnValue.Result = ResultEnum.Success;
             }
+            return returnValue;
         }
 
         public GetSourceTopicByIdResponse GetSourceById(int id)
@@ -48,14 +59,17 @@ namespace Notification.Profile.Business
                 {
                     Id = x.Id,
                     ServiceUrl = x.ServiceUrl
+
                 }).ToList();
             }
-            //Sor
-            //
-            //if (source == null)
-            //    return new ObjectResult(id) { StatusCode = 460 };
+
             if (source == null)
-                return null;
+            {
+                returnValue.StatusCode = EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode460); 
+                returnValue.MessageList.Add(StructStatusCode.StatusCode460.ToString());
+                returnValue.Result = ResultEnum.Error;
+                return returnValue;
+            }
 
 
             SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
@@ -88,9 +102,15 @@ namespace Notification.Profile.Business
                 // 0 nolu musteri generic musteri olarak kabul ediliyor. Banka kullanicilarin ozel durumlarda subscription olusturmalari icin kullanilacak.
                 consumers = db.Consumers.Where(s => (s.Client == requestModel.client || s.Client == 0) && s.SourceId == requestModel.sourceid).ToList();
             }
-            //Sor
-            //if (consumers == null || consumers.Count() < 1)
-            //    return new ObjectResult(consumers) { StatusCode = 470 };
+            if (consumers == null || consumers.Count() < 1)
+            {
+                returnValue.StatusCode = EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode470);
+                returnValue.MessageList.Add(StructStatusCode.StatusCode470.ToString());
+                returnValue.Result = ResultEnum.Error;
+                return returnValue;
+            }
+
+
             // Eger filtre yoksa bosu bosuna deserialize etme             
             if (consumers.Count > 1 && consumers.FirstOrDefault(c => c.Client == 0) != null)
             {
@@ -160,7 +180,7 @@ namespace Notification.Profile.Business
             {
                 Sources = sources.Where(s => s.ParentId == null).Select(s => BuildSource(s)).ToList()
             };
-            
+
 
             GetSourcesResponse.Source BuildSource(Source s)
             {
@@ -188,16 +208,21 @@ namespace Notification.Profile.Business
             }
         }
 
-        public void Patch(int id, PatchSourceRequest data)
+        public SourceResponseModel Patch(int id, PatchSourceRequest data)
         {
+            SourceResponseModel sourceResp = new SourceResponseModel();
             using (var db = new DatabaseContext())
             {
-                var source = db.Sources.FirstOrDefault(s => s.Id == id);
+               var  source = db.Sources.FirstOrDefault(s => s.Id == id);
+                if (source == null)
+                {
 
-                //Sor
-
-                //if (source == null)
-                   // return new ObjectResult(id) { StatusCode = 460 };
+                    sourceResp.StatusCode = EnumHelper.GetDescription<StatusCodeEnum>(StatusCodeEnum.StatusCode470);
+                    sourceResp.MessageList.Add(StructStatusCode.StatusCode470.ToString());
+                    sourceResp.Result = ResultEnum.Error;
+                    return sourceResp;
+                    
+                }
 
                 //if (data.Title != null) source.Title = data.Title;
                 if (data.Topic != null) source.Topic = data.Topic;
@@ -208,7 +233,9 @@ namespace Notification.Profile.Business
                 if (data.EmailServiceReference != null) source.EmailServiceReference = data.EmailServiceReference;
 
                 db.SaveChanges();
+                sourceResp.Result = ResultEnum.Success;
             }
+            return sourceResp;
         }
 
         public void Post(PostSourceRequest data)

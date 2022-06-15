@@ -10,6 +10,7 @@ using bbt.framework.dengage.Business;
 using Elastic.Apm.Api;
 using Notification.Profile.Helper;
 using System.Reflection;
+using Notification.Profile.Enum;
 
 
 
@@ -24,12 +25,12 @@ public class SourceController : ControllerBase
     private readonly ILogHelper _logHelper;
     private readonly ISource _Isource;
 
-    public SourceController(ILogger<SourceController> logger, ITracer tracer, ILogHelper logHelper,ISource Isource)
+    public SourceController(ILogger<SourceController> logger, ITracer tracer, ILogHelper logHelper, ISource Isource)
     {
         _logger = logger;
         _tracer = tracer;
         _logHelper = logHelper;
-        _Isource= Isource;
+        _Isource = Isource;
     }
 
     [SwaggerOperation(
@@ -41,17 +42,17 @@ public class SourceController : ControllerBase
 
     public IActionResult GetSources()
     {
-        List<Source> sources=null;
+        List<Source> sources = null;
         GetSourcesResponse getSourcesResponse = new GetSourcesResponse();
         var span = _tracer.CurrentTransaction?.StartSpan("GetSourcesSpan", "GetSources");
         try
         {
             getSourcesResponse = _Isource.GetSources();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
-          
+
             _logHelper.LogCreate(null, sources, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
@@ -77,19 +78,31 @@ public class SourceController : ControllerBase
         try
         {
             returnValue = _Isource.GetSourceById(id);
-            if (returnValue == null)
+            if (returnValue != null && returnValue.Result == ResultEnum.Error)
             {
-                new ObjectResult(id) { StatusCode = 460 };
+                span.CaptureErrorLog(new ErrorLog("Error Message( StatusCode:" + returnValue.StatusCode + " - Message:" + returnValue.MessageList[0].ToString() + ")")
+                {
+                    Level = "error",
+                    ParamMessage = returnValue.StatusCode + " - " + returnValue.MessageList[0].ToString()
+                }
+                );
+
+                return this.StatusCode(Convert.ToInt32(returnValue.StatusCode), returnValue.MessageList);
+                // new ObjectResult(id) { StatusCode = 460 };
+            }
+            else
+            {
+                return Ok(returnValue);
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
-          
+
             _logHelper.LogCreate(id, returnValue, MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
-        return Ok(returnValue);
+
     }
 
     [SwaggerOperation(
@@ -107,7 +120,7 @@ public class SourceController : ControllerBase
             _Isource.Post(data);
 
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
             _logHelper.LogCreate(data, "StatusCode:500", MethodBase.GetCurrentMethod().Name, e.Message);
@@ -123,19 +136,30 @@ public class SourceController : ControllerBase
              Tags = new[] { "Source" }
          )]
     [HttpPatch("/sources/{id}")]
-    [SwaggerResponse(200, "Success, source is updated successfully", typeof(void))]
+    [SwaggerResponse(200, "Success, source is updated successfully", typeof(SourceResponseModel))]
     [SwaggerResponse(460, "Source is not found.", typeof(Guid))]
     public IActionResult Patch(
         [FromRoute] int id,
         [FromBody] PatchSourceRequest data)
     {
         var span = _tracer.CurrentTransaction?.StartSpan("PatchSourceRequestSpan", "PatchSourceRequest");
+        SourceResponseModel sourceResp = new SourceResponseModel();
         try
         {
-            _Isource.Patch(id,data);
+            sourceResp = _Isource.Patch(id, data);
+            if (sourceResp != null && sourceResp.Result == ResultEnum.Error)
+            {
+                span.CaptureErrorLog(new ErrorLog("Error Message( StatusCode:" + sourceResp.StatusCode + " - Message:" + sourceResp.MessageList[0].ToString() + ")")
+                {
+                    Level = "error",
+                    ParamMessage = sourceResp.StatusCode + " - " + sourceResp.MessageList[0].ToString()
+                });
+                _logHelper.LogCreate(id, sourceResp.StatusCode, MethodBase.GetCurrentMethod().Name, sourceResp.MessageList[0]);
+                return this.StatusCode(Convert.ToInt32(sourceResp.StatusCode), sourceResp.MessageList);
+            }
 
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             span?.CaptureException(e);
             var req = new
@@ -155,23 +179,35 @@ public class SourceController : ControllerBase
             Tags = new[] { "Source" }
         )]
     [HttpDelete("/sources/{id}")]
-    [SwaggerResponse(200, "Success, source is deleted successfully", typeof(void))]
+    [SwaggerResponse(200, "Success, source is deleted successfully", typeof(SourceResponseModel))]
     [SwaggerResponse(460, "Source is not found", typeof(Guid))]
     [SwaggerResponse(461, "Source has consumer(s)", typeof(Guid))]
     public IActionResult Delete([FromRoute] int id)
     {
         var span = _tracer.CurrentTransaction?.StartSpan("DeleteSpan", "Delete");
+        SourceResponseModel respModel = new SourceResponseModel();
         try
         {
-            _Isource.Delete(id);
+            respModel = _Isource.Delete(id);
+            if (respModel != null && respModel.Result == Notification.Profile.Enum.ResultEnum.Error)
+            {
+                span.CaptureErrorLog(new ErrorLog("Error Message( StatusCode:" + respModel.StatusCode + " - Message:" + respModel.MessageList[0].ToString() + ")")
+                {
+                    Level = "error",
+                    ParamMessage = respModel.StatusCode + " - " + respModel.MessageList[0].ToString()
+                });
+                _logHelper.LogCreate(id, respModel.StatusCode, MethodBase.GetCurrentMethod().Name, respModel.MessageList[0]);
+                return this.StatusCode(Convert.ToInt32(respModel.StatusCode), respModel.MessageList);
+            }
+
         }
         catch (Exception e)
         {
             span?.CaptureException(e);
-            _logHelper.LogCreate(id, "StatusCode:500", MethodBase.GetCurrentMethod().Name, e.Message);
+            _logHelper.LogCreate(id, StatusCodeEnum.StatusCode500.ToString(), MethodBase.GetCurrentMethod().Name, e.Message);
             return this.StatusCode(500, e.Message);
         }
-        return Ok();
+        return Ok(respModel);
     }
 
 
@@ -188,8 +224,17 @@ public class SourceController : ControllerBase
         var span = _tracer.CurrentTransaction?.StartSpan("GetSourceConsumersSpan", "GetSourceConsumers");
         try
         {
-           returnValue=_Isource.GetSourceConsumers(requestModel);   
-         
+            returnValue = _Isource.GetSourceConsumers(requestModel);
+            if (returnValue != null && returnValue.Result == ResultEnum.Error)
+            {
+                span.CaptureErrorLog(new ErrorLog("Error Message( StatusCode:" + returnValue.StatusCode + " - Message:" + returnValue.MessageList[0].ToString() + ")")
+                {
+                    Level = "error",
+                    ParamMessage = returnValue.StatusCode + " - " + returnValue.MessageList[0].ToString()
+                });
+                _logHelper.LogCreate(requestModel, returnValue.StatusCode, MethodBase.GetCurrentMethod().Name, returnValue.MessageList[0]);
+                return this.StatusCode(Convert.ToInt32(returnValue.StatusCode), returnValue.MessageList);
+            }
         }
         catch (Exception e)
         {
