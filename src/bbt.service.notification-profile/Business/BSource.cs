@@ -71,7 +71,6 @@ namespace Notification.Profile.Business
                 return returnValue;
             }
 
-
             SourceServicesUrl sourceServicesUrl = new SourceServicesUrl();
 
             returnValue.Id = source.Id;

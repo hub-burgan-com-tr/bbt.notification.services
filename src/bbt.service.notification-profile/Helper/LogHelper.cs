@@ -15,8 +15,9 @@ namespace Notification.Profile.Helper
                     {
                         db.Add(new Log
                         {
-                            ServiceName = methodName
-                        });
+                            ServiceName = methodName,
+                            ProjectName= System.Reflection.Assembly.GetEntryAssembly().GetName().Name
+                    });
 
                         db.SaveChanges();
 
