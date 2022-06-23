@@ -1,4 +1,4 @@
-namespace bbt.service.notification_profile.Business
+namespace Notification.Profile.Business
 {
     public interface IinstandReminder
     {

@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Data.SqlClient;
 using Swashbuckle.AspNetCore.Annotations;
-using bbt.service.notification_profile.Business;
+using Notification.Profile.Business;
 using Elastic.Apm.Api;
 using Notification.Profile.Helper;
 using System.Reflection;

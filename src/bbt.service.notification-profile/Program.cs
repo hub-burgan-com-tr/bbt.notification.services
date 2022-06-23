@@ -4,7 +4,6 @@ using Elastic.Apm;
 using Elastic.Apm.NetCoreAll;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using bbt.service.notification_profile.Business;
 using Notification.Profile.Business;
 using Notification.Profile.Helper;
 

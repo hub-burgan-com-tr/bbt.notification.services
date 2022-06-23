@@ -4,7 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Web;
 
-namespace bbt.service.notification_profile.Model
+namespace notification_profile.Model
 {
     public class DbDataEntity
     {

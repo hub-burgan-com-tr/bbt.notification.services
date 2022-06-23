@@ -6,8 +6,8 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
-using bbt.service.notification_profile.Model;
-namespace bbt.service.notification_profile.Business
+using notification_profile.Model;
+namespace Notification.Profile.Business
 {
     public class DbCalls
     {

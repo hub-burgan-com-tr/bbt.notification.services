@@ -1,22 +1,27 @@
 using System.Data.SqlClient;
 using System.Data;
-using bbt.service.notification_profile.Model;
+using notification_profile.Model;
 
 
-namespace bbt.service.notification_profile.Business
+namespace Notification.Profile.Business
 {
     public class BInstantReminder : IinstandReminder
     {
         private readonly IConfiguration _configuration;
+        private readonly IConsumer _Iconsumer;
 
-        public BInstantReminder(IConfiguration configuration)
+        public BInstantReminder(IConfiguration configuration, IConsumer IConsumer)
         {
             _configuration = configuration;
+            _Iconsumer = IConsumer;
+
         }
 
         public GetInstantCustomerPermissionResponse GetCustomerPermission(string customerId)
         {
             var connectionString = _configuration.GetConnectionString("ReminderConnectionString");
+            IDictionary<string, string> reminderDescription = new Dictionary<string, string>();
+
             List<DbDataEntity> dbParams = new List<DbDataEntity>();
             DbDataEntity dbData = new DbDataEntity();
             dbData.parameterName = "@CUSTOMER_ID";
@@ -34,15 +39,24 @@ namespace bbt.service.notification_profile.Business
                 reminder.email = Convert.ToBoolean(dr["SEND_EMAIL"].ToString());
                 reminder.sms = Convert.ToBoolean(dr["SEND_SMS"].ToString());
                 reminder.mobileNotification = Convert.ToBoolean(dr["SEND_PUSHNOTIFICATION"].ToString());
-               // reminder.reminderDescription = ParameterSettings.GetSettings(dr["PRODUCT_CODE"].ToString(), Helper.GetLang(headers));
+                // reminder.reminderDescription = ParameterSettings.GetSettings(dr["PRODUCT_CODE"].ToString(), Helper.GetLang(headers));
                 reminder.reminderType = dr["PRODUCT_CODE"].ToString();
                 reminder.hasAmountRestriction = Convert.ToBoolean(dr["HAS_AMOUNT_RESTRICTION"].ToString());
+                reminders.Add(reminder);
+            }
+            GetUserConsumersResponse consumers = _Iconsumer.GetUserConsumers(long.Parse(customerId), long.Parse(customerId), null);
+
+            foreach (var consumer in consumers.Consumers)
+            {
+                reminder = new ReminderGet();
+                reminder.email = consumer.IsEmailEnabled;
+                reminder.sms = consumer.IsSmsEnabled;
+                reminder.mobileNotification = consumer.IsPushEnabled;
+                reminder.reminderType = consumer.Source.ToString();
                 reminders.Add(reminder);
             }
             instantReminder.reminders = reminders;
             return instantReminder;
         }
-
-
     }
 }
