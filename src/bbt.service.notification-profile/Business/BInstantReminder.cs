@@ -20,8 +20,20 @@ namespace Notification.Profile.Business
         public GetInstantCustomerPermissionResponse GetCustomerPermission(string customerId)
         {
             var connectionString = _configuration.GetConnectionString("ReminderConnectionString");
-            IDictionary<string, string> reminderDescription = new Dictionary<string, string>();
 
+            // TO DO REFACTOR 
+            Dictionary<string, string> reminderDescription = new Dictionary<string, string>()
+            {
+                    { "accountMoneyEntry", "Hesabýma para geldiðinde" },
+                    { "accountMoneyExit", "Hesabýmdan para çýkýþý olduðunda" },
+                    { "checkingAccountUpperLimitExceeded", "Vadesiz hesap bakiyesi üst limite çýktýðýnda" },
+                    { "checkingAccountLowerLimitExceeded", "Vadesiz hesap bakiyesi alt limite düþtüðünde" },
+                    { "riskyFutureTransfersAndPayments", "Bakiye yetersizliði nedeniyle ödenmeme riski taþýyan ileri tarihli para transferleri ve ödemelerde" },
+                    { "savingAccountDueDateReturn", "Vadeli mevduat hesap dönüþü" },
+                    { "cardPosLimit", "Banka Kartý Alýþveriþ Limiti" },
+                    { "cardRefund", "Banka Kartý Ýade Bildirimi" },
+                    { "cardReccurring", "Banka Kartý Talimatlý Ödeme" },
+            };
             List<DbDataEntity> dbParams = new List<DbDataEntity>();
             DbDataEntity dbData = new DbDataEntity();
             dbData.parameterName = "@CUSTOMER_ID";
@@ -39,8 +51,8 @@ namespace Notification.Profile.Business
                 reminder.email = Convert.ToBoolean(dr["SEND_EMAIL"].ToString());
                 reminder.sms = Convert.ToBoolean(dr["SEND_SMS"].ToString());
                 reminder.mobileNotification = Convert.ToBoolean(dr["SEND_PUSHNOTIFICATION"].ToString());
-                // reminder.reminderDescription = ParameterSettings.GetSettings(dr["PRODUCT_CODE"].ToString(), Helper.GetLang(headers));
                 reminder.reminderType = dr["PRODUCT_CODE"].ToString();
+                reminder.reminderDescription = reminderDescription[dr["PRODUCT_CODE"].ToString()];
                 reminder.hasAmountRestriction = Convert.ToBoolean(dr["HAS_AMOUNT_RESTRICTION"].ToString());
                 reminders.Add(reminder);
             }
