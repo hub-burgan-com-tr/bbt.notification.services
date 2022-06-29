@@ -64,11 +64,12 @@ namespace Notification.Profile.Business
                 reminder.email = consumer.IsEmailEnabled;
                 reminder.sms = consumer.IsSmsEnabled;
                 reminder.mobileNotification = consumer.IsPushEnabled;
-                reminder.reminderType = consumer.Source.ToString();
                 reminders.Add(reminder);
             }
             instantReminder.reminders = reminders;
             return instantReminder;
         }
+
+
     }
 }

@@ -38,6 +38,12 @@ namespace bbt.service.notification_profile.Controllers
         [SwaggerResponse(200, "Success, Customerpermission are returned successfully", typeof(GetInstantCustomerPermissionResponse))]
         public IActionResult CustomerPermission(string customerId)
         {
+
+            if (!Request.Headers.TryGetValue("lang", out var lang))
+            {
+                lang = "tr - TR";
+            }
+
             var span = _tracer.CurrentTransaction?.StartSpan("CustomerPermissionSpan", "CustomerPermission");
             GetInstantCustomerPermissionResponse getInstantCustomerPermissionResponse = new GetInstantCustomerPermissionResponse();
             try
