@@ -8,6 +8,8 @@ public class DatabaseContext : DbContext
     public DbSet<SourceService> SourceServices { get; set; }
     public DbSet<Log> Logs { get; set; }
     public DbSet<LogDetail> LogDetails { get; set; }
+
+    public DbSet<ReminderDefinition> ReminderDefinitions { get; set; }
     public string DbPath { get; private set; }
     public DatabaseContext()
     {
@@ -133,6 +135,10 @@ public class DatabaseContext : DbContext
         builder.Entity<LogDetail>()
                   .Property(f => f.Id)
                   .ValueGeneratedOnAdd();
+
+        builder.Entity<ReminderDefinition>()
+                 .Property(f => f.Id)
+                 .ValueGeneratedOnAdd();
 
     }
 }

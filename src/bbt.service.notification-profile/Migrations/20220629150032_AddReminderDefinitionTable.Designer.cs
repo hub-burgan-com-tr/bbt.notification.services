@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Notification.Profile.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20220629150032_AddReminderDefinitionTable")]
+    partial class AddReminderDefinitionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -152,9 +154,6 @@ namespace Notification.Profile.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
-                    b.Property<string>("DefinitionCode")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Language")
                         .HasColumnType("nvarchar(max)");
 
@@ -163,7 +162,7 @@ namespace Notification.Profile.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ReminderDefinitions");
+                    b.ToTable("ReminderDefinition");
                 });
 
             modelBuilder.Entity("Source", b =>

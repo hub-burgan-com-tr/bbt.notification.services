@@ -44,6 +44,7 @@ builder.Services.AddScoped<ISource, BSource>();
 builder.Services.AddScoped<IConfigurations, BConfiguration>();
 builder.Services.AddScoped<IConsumer, BConsumer>();
 builder.Services.AddScoped<ILogHelper, LogHelper>();
+builder.Services.AddScoped<IReminderDefinition, BReminderDefinition>();
 builder.Services.AddSingleton(n => Agent.Tracer);
 var app = builder.Build();
 
