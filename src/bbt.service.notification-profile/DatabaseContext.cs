@@ -8,8 +8,8 @@ public class DatabaseContext : DbContext
     public DbSet<SourceService> SourceServices { get; set; }
     public DbSet<Log> Logs { get; set; }
     public DbSet<LogDetail> LogDetails { get; set; }
-
     public DbSet<ReminderDefinition> ReminderDefinitions { get; set; }
+    public DbSet<NotificationLog> NotificationLogs { get; set; }
     public string DbPath { get; private set; }
     public DatabaseContext()
     {
@@ -25,12 +25,12 @@ public class DatabaseContext : DbContext
             .AddJsonFile($"appsettings.{GetEnviroment()}.json", false, true)
             .AddEnvironmentVariables()
             .Build();
-            
-            
+
+
         options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
         options.EnableSensitiveDataLogging();
     }
-    
+
 
     string? GetEnviroment()
     {
@@ -42,6 +42,9 @@ public class DatabaseContext : DbContext
 
         builder.Entity<Consumer>().OwnsOne(e => e.Phone);
 
+       // builder.Entity<NotificationLog>().OwnsOne(e => e.Phone);
+
+
         /* TODO: SQL Edge not supporting memory optimized tables
         builder.Entity<Consumer>(c =>
         {
@@ -52,8 +55,8 @@ public class DatabaseContext : DbContext
 
         builder.Entity<Source>()
             .HasOne(s => s.Parent)
-            .WithMany(s=> s.Children)
-            .HasForeignKey(s=> s.ParentId);
+            .WithMany(s => s.Children)
+            .HasForeignKey(s => s.ParentId);
 
 
 
@@ -126,7 +129,7 @@ public class DatabaseContext : DbContext
               Id = 1,
               SourceId = 1,
               ServiceUrl = "X",
-              
+
           });
         builder.Entity<Log>()
                     .Property(f => f.Id)
@@ -139,6 +142,21 @@ public class DatabaseContext : DbContext
         builder.Entity<ReminderDefinition>()
                  .Property(f => f.Id)
                  .ValueGeneratedOnAdd();
+
+
+        builder.Entity<NotificationLog>()
+           .Property(f => f.Id)
+           .ValueGeneratedOnAdd();
+
+        //builder.Entity<NotificationLog>()
+        //    .HasKey(c => c.Id)
+        //    .IsClustered(false);
+        builder.Entity<NotificationLog>()
+                 .ToTable("NotificationLogs", b => b.IsTemporal());
+
+
+
+
 
     }
 }

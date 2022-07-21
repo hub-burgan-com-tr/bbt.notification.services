@@ -3,9 +3,12 @@ using bbt.framework.dengage.Business;
 using Elastic.Apm;
 using Elastic.Apm.NetCoreAll;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Models;
 using Notification.Profile.Business;
 using Notification.Profile.Helper;
+using Notification.Profile.Model;
+using StackExchange.Redis;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -38,6 +41,9 @@ builder.Services.AddSwaggerGen(c =>
                 c.EnableAnnotations(enableAnnotationsForInheritance: true, enableAnnotationsForPolymorphism: true);
                 c.CustomSchemaIds(x => x.FullName);
             });
+//Redis
+builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = builder.Configuration.GetConnectionString("RedisConnection"); });
+//
 builder.Services.AddDbContext<DatabaseContext>();
 builder.Services.AddScoped<IinstandReminder, BInstantReminder>();
 builder.Services.AddScoped<ISource, BSource>();
@@ -48,13 +54,18 @@ builder.Services.AddScoped<IReminderDefinition, BReminderDefinition>();
 builder.Services.AddSingleton(n => Agent.Tracer);
 var app = builder.Build();
 
+
+
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
 //{
 app.UseSwagger();
 app.UseSwaggerUI(c =>
             {
+         
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "bbt.service.notification-profile v1");
+
+               // c.SwaggerEndpoint("https://test-notification.burgan.com.tr/swagger/index.html", "bbt.service.notification-profile v1");
                 //c.RoutePrefix = "";
 
             });
@@ -67,7 +78,6 @@ app.UseEndpoints(endpoints =>
             endpoints.MapControllers();
             endpoints.MapHealthChecks("/health");
         });
-
 
 
 

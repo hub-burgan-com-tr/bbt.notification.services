@@ -64,7 +64,7 @@ namespace Notification.Profile.Business
                     }
                 }
 
-                 returnValue.Consumers = confUsers;
+                returnValue.Consumers = confUsers;
             }
             return returnValue;
         }
@@ -91,6 +91,7 @@ namespace Notification.Profile.Business
         {
             throw new NotImplementedException();
         }
+    
 
         public PostUpdateResponse UpdateDevice(long user, PostUpdateDeviceRequest data)
         {
@@ -101,7 +102,7 @@ namespace Notification.Profile.Business
                 result = db.Database.ExecuteSqlInterpolated($"UPDATE [Consumers] SET DeviceKey = '{data.NewDeviceKey}' WHERE DeviceKey = '{data.OldDeviceKey}' AND [User] = {user}");
                 return new PostUpdateResponse { UpdatedRecordCount = result };
             }
-        
+
         }
 
         public PostUpdateResponse UpdateEmail(long user, PostUpdateEmailRequest data)
@@ -113,7 +114,7 @@ namespace Notification.Profile.Business
 
                 return new PostUpdateResponse { UpdatedRecordCount = result };
             }
-           
+
         }
 
         public PostUpdateResponse UpdatePhone(long user, PostUpdatePhoneRequest data)

@@ -109,8 +109,6 @@ public class ConfigurationController : ControllerBase
     }
 
 
-
-
     [SwaggerOperation(
                 Summary = "Updates user email address in all consumers",
              Tags = new[] { "Configuration" }

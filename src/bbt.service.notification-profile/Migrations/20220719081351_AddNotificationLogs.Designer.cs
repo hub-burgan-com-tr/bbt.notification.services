@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Notification.Profile.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20220719081351_AddNotificationLogs")]
+    partial class AddNotificationLogs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,6 +160,12 @@ namespace Notification.Profile.Migrations
                     b.Property<long>("Client")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("DeviceKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Filter")
                         .HasColumnType("nvarchar(max)");
 
@@ -175,10 +183,16 @@ namespace Notification.Profile.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodEnd");
 
+                    b.Property<DateTime>("PeriodEndDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime>("PeriodStart")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasColumnName("PeriodStart");
+
+                    b.Property<DateTime>("PeriodStartDate")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("SourceId")
                         .HasColumnType("int");

@@ -15,5 +15,6 @@ public class Consumer
     public Phone Phone { get; set; }
     public bool IsEmailEnabled { get; set; }
     public string Email { get; set; }
-
+    public string DefinitionCode { get; set; }
+    
 }

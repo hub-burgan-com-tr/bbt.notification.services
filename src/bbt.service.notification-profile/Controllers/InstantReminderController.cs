@@ -7,6 +7,7 @@ using Elastic.Apm.Api;
 using Notification.Profile.Helper;
 using System.Reflection;
 using Notification.Profile.Enum;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace bbt.service.notification_profile.Controllers
 {
@@ -20,12 +21,14 @@ namespace bbt.service.notification_profile.Controllers
         private readonly IinstandReminder _IinstandReminder;
         private readonly ITracer _tracer;
         private readonly ILogHelper _logHelper;
+        private readonly IDistributedCache _cache;
 
-        public InstantReminderController(IinstandReminder instantReminder, ITracer tracer, ILogHelper logHelper)
+        public InstantReminderController(IinstandReminder instantReminder, ITracer tracer, ILogHelper logHelper, IDistributedCache cache)
         {
             _IinstandReminder = instantReminder;
             _tracer = tracer;
             _logHelper = logHelper; 
+            _cache = cache; 
         }
 
 
@@ -49,8 +52,15 @@ namespace bbt.service.notification_profile.Controllers
             GetInstantCustomerPermissionResponse getInstantCustomerPermissionResponse = new GetInstantCustomerPermissionResponse();
             try
             {
-                getInstantCustomerPermissionResponse = _IinstandReminder.GetCustomerPermission(customerId,lang);
-                return Ok(getInstantCustomerPermissionResponse);
+                getInstantCustomerPermissionResponse = _IinstandReminder.GetCustomerPermission(customerId,lang).Result;
+                if (getInstantCustomerPermissionResponse != null && getInstantCustomerPermissionResponse.Result == ResultEnum.Error)
+                {
+                    _logHelper.LogCreate(customerId, getInstantCustomerPermissionResponse, MethodBase.GetCurrentMethod().Name, getInstantCustomerPermissionResponse.MessageList[0]);
+                }
+                else
+                {
+                    return Ok(getInstantCustomerPermissionResponse);
+                }
             }
 
             catch (Exception e)
@@ -61,6 +71,7 @@ namespace bbt.service.notification_profile.Controllers
                 Console.WriteLine(e.Message);
                 return this.StatusCode(500, e.Message);
             }
+            return Ok(getInstantCustomerPermissionResponse);
         }
 
     }

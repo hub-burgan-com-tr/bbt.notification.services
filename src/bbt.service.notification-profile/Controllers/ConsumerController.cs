@@ -57,6 +57,34 @@ public class ConsumerController : ControllerBase
 
         return Ok(returnValue);
     }
+    [SwaggerOperation(
+       Summary = "Insert/Update consumer ",
+       Tags = new[] { "Consumer" }
+   )]
+    [HttpPost("/consumers/clients/{client}/sourceId/{sourceId}/postconsumer")]
+    [SwaggerResponse(200, "Success, consumers is returned successfully", typeof(PostConsumerRequest))]
+
+    public IActionResult PostConsumers(
+      [FromRoute] long client,
+      [FromRoute] long sourceId,
+      [FromBody] PostConsumerRequest consumer)
+
+    {
+        var span = _tracer.CurrentTransaction?.StartSpan("PostConsumersSpan", "PostConsumers");
+        PostConsumerResponse postConsumerResponse = new PostConsumerResponse();
+        try
+        {
+            postConsumerResponse = _Iconsumer.PostConsumers(client,sourceId,consumer);
+        }
+        catch (Exception e)
+        {
+            span?.CaptureException(e);
+
+            _logHelper.LogCreate(consumer, postConsumerResponse, MethodBase.GetCurrentMethod().Name, e.Message);
+            return this.StatusCode(500, e.Message);
+        }
+        return Ok(postConsumerResponse);
+    }
 
 
 }

@@ -5,7 +5,10 @@
         GetClientUsersResponse GetUsers(long client);
         GetConsumerTreeResponse GetUserConsumers(long client,long user);
 
-        GetUserConsumersResponse PostUserConsumers(long client, long user);
+        //GetUserConsumersResponse PostUserConsumers(long client, long user, Consumer consumer, string definitionCode);
+        GetUserConsumersResponse PostUserConsumers(Consumer consumer);
+
+    
 
         PostUpdateResponse UpdateEmail(long user, PostUpdateEmailRequest data);
 

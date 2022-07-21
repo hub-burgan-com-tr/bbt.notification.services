@@ -1,0 +1,25 @@
+version: '3.4'
+
+services:
+  bbt.service.notification-profile:
+    image: ${DOCKER_REGISTRY-}bbtservicenotificationprofile
+    build:
+      context: .
+      dockerfile: src\bbt.service.notification-profile\Dockerfile
+  web:
+    image: redistest:latest
+    depends_on:
+      - "redis_image"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9901:80"
+    links:
+      - "redis_image"
+
+  redis_image:
+    image: redis
+    container_name: cache
+    ports:
+      - "6379:6379"
