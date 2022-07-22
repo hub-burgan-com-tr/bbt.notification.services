@@ -57,7 +57,7 @@ namespace Notification.Profile.Business
                 await _cache.SetAsync("redis", Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reminderDefinitionList)),
                 new DistributedCacheEntryOptions()
                 {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(1440)
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(1)
                 });
             }
 
