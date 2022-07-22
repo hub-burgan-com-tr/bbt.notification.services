@@ -91,7 +91,8 @@ namespace Notification.Profile.Business
         {
             throw new NotImplementedException();
         }
-    
+
+       
 
         public PostUpdateResponse UpdateDevice(long user, PostUpdateDeviceRequest data)
         {

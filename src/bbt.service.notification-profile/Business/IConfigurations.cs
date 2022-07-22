@@ -6,7 +6,7 @@
         GetConsumerTreeResponse GetUserConsumers(long client,long user);
 
         //GetUserConsumersResponse PostUserConsumers(long client, long user, Consumer consumer, string definitionCode);
-        GetUserConsumersResponse PostUserConsumers(Consumer consumer);
+        GetUserConsumersResponse PostUserConsumers(long client, long user);
 
     
 
