@@ -45,22 +45,24 @@ namespace Notification.Profile.Business
             List<ReminderDefinition> reminderDefinitionList = new List<ReminderDefinition>();
             GetReminderDefinitionResponse reminderDefinitionResponse = new GetReminderDefinitionResponse();
 
-            var cachedList = await _cache.GetAsync("redis");
+            var cachedList = await _cache.GetAsync("notificationRedis");
             if (cachedList != null && !string.IsNullOrEmpty(System.Text.Encoding.UTF8.GetString(cachedList)))
             {
-                reminderDefinitionList = JsonConvert.DeserializeObject<List<ReminderDefinition>>(System.Text.Encoding.UTF8.GetString(cachedList));
+               reminderDefinitionList = JsonConvert.DeserializeObject<List<ReminderDefinition>>(System.Text.Encoding.UTF8.GetString(cachedList));
             }
             else
             {
                 reminderDefinitionResponse = _IreminderDefinition.GetReminderDefinitionList(lang);
                 reminderDefinitionList = reminderDefinitionResponse.ReminderDefinitionList;
-                await _cache.SetAsync("redis", Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reminderDefinitionList)),
+               
+                await _cache.SetAsync("notificationRedis", Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reminderDefinitionList)),
                 new DistributedCacheEntryOptions()
                 {
-                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(1)
+                    AbsoluteExpiration = DateTimeOffset.UtcNow.AddMinutes(Convert.ToDouble(_configuration.GetSection("RedisTimeout").Value))
                 });
             }
 
+            
 
             List<DbDataEntity> dbParams = new List<DbDataEntity>();
             DbDataEntity dbData = new DbDataEntity();
