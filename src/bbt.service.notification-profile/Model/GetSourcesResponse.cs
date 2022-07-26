@@ -19,6 +19,8 @@ public class GetSourcesResponse:BaseResponseModel
         public string PushServiceReference { get; set; }
         public string SmsServiceReference { get; set; }
         public string EmailServiceReference { get; set; }
+        public string KafkaUrl { get; set; }
+        public string KafkaCertificate { get; set; }
 
         public class SourceParameter
         {

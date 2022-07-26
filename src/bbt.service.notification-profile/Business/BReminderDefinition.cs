@@ -11,7 +11,7 @@ namespace Notification.Profile.Business
             _configuration = configuration;
         }
 
-        public GetReminderDefinitionResponse GetReminderDefinitionList(string lang)
+        public GetReminderDefinitionResponse GetReminderDefinitionListWithLang(string lang)
         {
             GetReminderDefinitionResponse returnValue = new GetReminderDefinitionResponse();
             List<ReminderDefinition> reminderDefinitionList = new List<ReminderDefinition>();
@@ -23,7 +23,7 @@ namespace Notification.Profile.Business
             return returnValue;
         }
 
-        public GetReminderDefinitionResponse GetReminderDefinition(List<ReminderDefinition> definitionList,string definitionCode)
+        public GetReminderDefinitionResponse GetReminderDefinitionWithDefinitionCode(List<ReminderDefinition> definitionList,string definitionCode)
         {
             GetReminderDefinitionResponse returnValue = new GetReminderDefinitionResponse();
             if(definitionList!=null && !String.IsNullOrEmpty(definitionCode))

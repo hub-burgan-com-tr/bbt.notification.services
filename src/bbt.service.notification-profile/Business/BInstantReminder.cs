@@ -52,7 +52,7 @@ namespace Notification.Profile.Business
             }
             else
             {
-                reminderDefinitionResponse = _IreminderDefinition.GetReminderDefinitionList(lang);
+                reminderDefinitionResponse = _IreminderDefinition.GetReminderDefinitionListWithLang(lang);
                 reminderDefinitionList = reminderDefinitionResponse.ReminderDefinitionList;
                
                 await _cache.SetAsync("notificationRedis", Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(reminderDefinitionList)),
@@ -90,7 +90,7 @@ namespace Notification.Profile.Business
                     reminder.sms = Convert.ToBoolean(dr["SEND_SMS"].ToString());
                     reminder.mobileNotification = Convert.ToBoolean(dr["SEND_PUSHNOTIFICATION"].ToString());
                     reminder.reminderType = dr["PRODUCT_CODE"].ToString();
-                    GetReminderDefinitionResponse reminderDefinitionResp = _IreminderDefinition.GetReminderDefinition(reminderDefinitionList, dr["PRODUCT_CODE"].ToString());
+                    GetReminderDefinitionResponse reminderDefinitionResp = _IreminderDefinition.GetReminderDefinitionWithDefinitionCode(reminderDefinitionList, dr["PRODUCT_CODE"].ToString());
                     if (reminderDefinitionResp != null && reminderDefinitionResp.ReminderDefinitions != null)
                     {
                         reminder.reminderDescription = reminderDefinitionResp.ReminderDefinitions.Title;
@@ -110,7 +110,7 @@ namespace Notification.Profile.Business
                     reminder.amount = 0;//Karar verilecek
                     reminder.hasAmountRestriction = true;//Karar verilecek
                    
-                    GetReminderDefinitionResponse reminderDefinitionRespNew = _IreminderDefinition.GetReminderDefinition(reminderDefinitionList, consumer.DefinitionCode);
+                    GetReminderDefinitionResponse reminderDefinitionRespNew = _IreminderDefinition.GetReminderDefinitionWithDefinitionCode(reminderDefinitionList, consumer.DefinitionCode);
                     if (reminderDefinitionRespNew != null && reminderDefinitionRespNew.ReminderDefinitions != null)
                     {
                         reminder.reminderDescription = reminderDefinitionRespNew.ReminderDefinitions.Title;

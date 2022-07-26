@@ -88,7 +88,8 @@ public class DatabaseContext : DbContext
               Secret = "",
               PushServiceReference = "notify_push_incoming_eft",
               SmsServiceReference = "9cab7fdc-76a4-44be-b6fa-101f13729875",
-              EmailServiceReference = "notify_email_incoming_eft"
+              EmailServiceReference = "notify_email_incoming_eft",
+              KafkaCertificate="x"
           });
 
         builder.Entity<Consumer>(c =>

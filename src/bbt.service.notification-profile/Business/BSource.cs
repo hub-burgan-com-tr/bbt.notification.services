@@ -86,6 +86,7 @@ namespace Notification.Profile.Business
             returnValue.Secret = source.Secret;
             returnValue.ClientIdJsonPath = source.ClientIdJsonPath;
             returnValue.KafkaUrl = source.KafkaUrl;
+            returnValue.KafkaCertificate = source.KafkaCertificate;
             returnValue.ServiceUrlList = servicesUrls;
 
             return returnValue;
@@ -201,7 +202,11 @@ namespace Notification.Profile.Business
                     Secret = s.Secret,
                     PushServiceReference = s.PushServiceReference,
                     SmsServiceReference = s.SmsServiceReference,
-                    EmailServiceReference = s.EmailServiceReference
+                    EmailServiceReference = s.EmailServiceReference,
+                    KafkaCertificate=s.KafkaCertificate,
+                    KafkaUrl=s.KafkaUrl
+                    
+                    
                 };
 
             }
@@ -230,7 +235,8 @@ namespace Notification.Profile.Business
                 if (data.PushServiceReference != null) source.PushServiceReference = data.PushServiceReference;
                 if (data.SmsServiceReference != null) source.SmsServiceReference = data.SmsServiceReference;
                 if (data.EmailServiceReference != null) source.EmailServiceReference = data.EmailServiceReference;
-
+                if (data.KafkaUrl != null) source.KafkaUrl = data.KafkaUrl;
+                if (data.KafkaCertificate != null) source.KafkaCertificate = data.KafkaCertificate;
                 db.SaveChanges();
                 sourceResp.Result = ResultEnum.Success;
             }
@@ -243,14 +249,22 @@ namespace Notification.Profile.Business
             {
                 db.Add(new Source
                 {
-                    Id = data.Id,
+                    //Id = data.Id,
                     //Title = data.Title,
                     Topic = data.Topic,
                     ApiKey = data.ApiKey,
                     Secret = data.Secret,
                     PushServiceReference = data.PushServiceReference,
                     SmsServiceReference = data.SmsServiceReference,
-                    EmailServiceReference = data.EmailServiceReference
+                    EmailServiceReference = data.EmailServiceReference,
+                    KafkaUrl=data.KafkaUrl,
+                    KafkaCertificate=data.KafkaCertificate,
+                    DisplayType=data.DisplayType,
+                    Title_EN=data.Title_EN,
+                    Title_TR=data.Title_TR,
+                    ParentId=data.ParentId,
+                    ClientIdJsonPath=data.ClientIdJsonPath
+                    
                 });
 
                 db.SaveChanges();
